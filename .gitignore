@@ -131,3 +131,6 @@ imagens/*.gif
 
 # .zip
 *.zip
+
+# data folder
+main/data/*

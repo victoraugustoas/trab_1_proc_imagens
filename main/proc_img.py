@@ -1,42 +1,50 @@
-import cv2
 import os
-import numpy as np
-from math import trunc
-import matplotlib.pyplot as plt
+
 import warnings
+
+from math import trunc
+
+import cv2
+
+import numpy as np
+
+import matplotlib.pyplot as plt
 
 # remove os warnings eventuais
 warnings.simplefilter("ignore")
 
 
 def open_img(path):
+    """
+        Abre a imagem
+
+        path: local da imagem
+    """
     img = cv2.imread(path)
     return img
 
 
 def save_img(path, name_arq, matrix):
+    """
+        Salva a imagem
+
+        path: local onde será salvo
+        name_arq: nome do arquivo
+        matrix: obj da img
+    """
     path = os.path.join(path, name_arq)
     return cv2.imwrite(path, matrix)
 
 
 def status_img(matrix):
+    """
+        Recebe o obj da img
+
+        retorna o numero de linhas, colunas e canais da img
+
+        retorno (nrows, ncols, channels)
+    """
     return (matrix.shape[0], matrix.shape[1], matrix.shape[2])
-
-
-def hist_to_img(matrix, hist_blue, hist_green, hist_red):
-    nrows, ncols, channels = status_img(matrix)
-
-    for i in range(nrows):
-        for j in range(ncols):
-            for channel in range(channels):
-                if channel == 0:
-                    matrix[i][j][channel] = hist_blue[matrix[i][j][channel]]
-                elif channel == 1:
-                    matrix[i][j][channel] = hist_green[matrix[i][j][channel]]
-                else:
-                    matrix[i][j][channel] = hist_red[matrix[i][j][channel]]
-
-    return matrix
 
 
 def generate_histogram(
@@ -49,36 +57,57 @@ def generate_histogram(
     xlabel="Valores de cinza",
     ylabel="Frequência",
 ):
+    """
+        Gere o histograma de um vetor
 
+        names: valores do eixo x
+        values: valores correspondentes aos names
+        title: titulo do gráfico
+        name_file: nome do arquivo gerado,
+        color: cor das barras,
+        path: local onde será salvo,
+        xlabel: legenda para eixo x
+        ylabel: legenda para eiyo y
+    """
     plt.bar(names, values, color=color)
     plt.suptitle(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.savefig(os.path.join(path, name_file))
-    plt.close()
-    return
+    return plt.close()
 
 
 def brightness(matrix, coefficient):
+    """
+        Recebe o obj da imagem e um coeficiente
+
+        Aplica uma soma dos pixels da imagem com o coeficiente
+        para aumentar o brilho
+    """
     nrows = matrix.shape[0]
     ncols = matrix.shape[1]
+
+    if coefficient < 0:
+        return False
 
     for i in range(nrows):
         for j in range(ncols):
 
             # para os canais RGB
             for channel in range(0, 3):
-                sum = coefficient + matrix[i][j][channel]
-                if sum >= 255:
+                sum_ = coefficient + matrix[i][j][channel]
+                if sum_ >= 255:
                     matrix[i][j][channel] = 255
                 else:
-                    matrix[i][j][channel] = sum
+                    matrix[i][j][channel] = sum_
 
     return matrix
 
 
 def negative(matrix):
-
+    """
+        Recebe o obj de imagem e transforma a imagem em negativo
+    """
     nrows = matrix.shape[0]
     ncols = matrix.shape[1]
     channels = matrix.shape[2]
@@ -92,6 +121,20 @@ def negative(matrix):
 
 
 def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
+
+    """
+        Recebe 3 vetores:
+            hist_blue,
+            hist_green,
+            hist_red
+        representando os histogramas de uma imagem
+
+        Gera 3 gráficos de histogramas, 1 para cada vetor
+        
+        path: local de destino
+        prefix: prefixo do nome do arquivo
+    """
+
     # label do eixo x
     names = np.arange(0, 256)
 
@@ -121,16 +164,6 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
         path,
     )
 
-    hists = [
-        (os.path.join(path, prefix + "histograma_global_blue.txt"), hist_blue),
-        (os.path.join(path, prefix + "histograma_global_green.txt"), hist_green),
-        (os.path.join(path, prefix + "histograma_global_red.txt"), hist_red),
-    ]
-    for hist in hists:
-        with open(hist[0], "w") as arq:
-            # converte pra inteiro os valores
-            aux = list(hist[1])
-            arq.write(str(aux))
     return True
 
 
@@ -157,7 +190,14 @@ def histogram_global(matrix):
     return (hist_blue, hist_green, hist_red)
 
 
-def histogram_local(matrix, nparts, path):
+def histogram_local(matrix, nparts):
+    """
+        Recebe o obj da img
+
+        nparts: qtd de partições da imagem
+
+        retorna uma lista com vetores de histograma
+    """
 
     nrows, ncols, channels = status_img(matrix)
 
@@ -179,12 +219,26 @@ def histogram_local(matrix, nparts, path):
 
         hist_parts.append(hist)
 
-    vector_concat = []
-    for idx, hist_local in enumerate(hist_parts):
-        vector_concat.extend(hist_local)
+    return hist_parts
 
-    with open(os.path.join(path, "hist_local_%s.txt" % (str(nparts))), "w") as arq:
+
+def save_vector(path, *vectors, prefix="", name=""):
+    """
+        Recebe vetores e concatena-os
+
+        path: local de destino
+        prefix: prefixo do nome do arquivo
+        *vectors: vetores a serem concatenados
+    """
+
+    vector_concat = []
+    for vector in vectors:
+        for ele in vector:
+            try:
+                vector_concat.extend(ele)
+            except:
+                vector_concat.append(ele)
+
+    with open(os.path.join(path, prefix + name), "w") as arq:
         arq.write("tamanho: %s\n" % (len(vector_concat)))
         arq.write(str(vector_concat))
-
-    return True
