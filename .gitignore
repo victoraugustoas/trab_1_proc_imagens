@@ -122,3 +122,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# imagens
+imagens/*.jpg
+imagens/*.png
+imagens/*.gif
+
+# .zip
+*.zip
