@@ -10,6 +10,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from random import randint
+import pandas as pd
 # remove os warnings eventuais
 warnings.simplefilter("ignore")
 
@@ -242,3 +244,139 @@ def save_vector(path, *vectors, prefix="", name=""):
     with open(os.path.join(path, prefix + name), "w") as arq:
         arq.write("tamanho: %s\n" % (len(vector_concat)))
         arq.write(str(vector_concat))
+
+def generate_position(max_lin, max_col):
+    '''
+    dado dois numeros maximos, irá gerar dois outros numeros aleatorios entre esses dois maximos, ou seja
+    ira gerar um pixel aleatorio dentro dos limites da imagem
+    :param max_lin: numero maxixmo de line
+    :param max_col: numero maximo de coluna
+    :return: retorna uma tupla contendo um numero de lin e um de coluna, tuple(lin, col)
+    '''
+    #discontando 1 pq ele gera o limite superior
+    aux = (randint(0, max_lin-1), (randint(0, max_col-1)))
+    return tuple(aux)
+
+# ATENÇÃO: a matrix dada como param é alterada
+def generate_noise(matrix, percent, noise):
+    '''
+    dada uma imagem, irá inserir ruido nela (em apenas uma banda), aleatóriamente, obedecendo uma porcentagem.
+    :param matrix: a imagem que se deseja adicionar ruido tipo sal
+    :param percent: a porcentagem de ruido que se deseja aplicar na imagem (valor inteiro)
+    :param noise: variavel que carrega o tipo de ruido, "salt" = branco, "pepper" = preto
+    :return: a matrix referente a imagem, porém acrescido de ruido
+    '''
+
+    if noise == "salt":
+        noise = 255
+    elif noise == "pepper":
+        noise = 0
+
+    if type(percent) == int:
+        percent = percent/100
+    elif type(percent) == float:
+        pass
+
+    lista_pixel = []
+    nLins, nCols, canais = status_img(matrix)
+    qntd_pixels = nLins * nCols
+    ch = 0
+
+    dict_pixel = {}
+    #gerando posições aleatorias até que o limitar percentual seja atingido
+    while len(lista_pixel) < int(qntd_pixels*percent):
+        pixel = generate_position(nLins, nCols)
+        aux = str(pixel) # guaradaremos os pixels como strings só pra consultar de forma mais eficiente
+        if dict_pixel.get(aux, 0) == 0:
+            #se entraou aqui é pq nao existe no dict
+            dict_pixel[aux] = 1 #coloca no dict
+            lista_pixel.append(pixel) #coloca na lista
+
+    for pixel in lista_pixel:
+        matrix[pixel[0]][pixel[1]][ch] = noise
+        #matrix[pixel[0]][pixel[1]][1] = noise
+        #matrix[pixel[0]][pixel[1]][2] = noise
+
+    return matrix
+
+def filtro_media(matrix, limiar):
+    '''
+    aplica o filtro da media nos pixels da imagem, com uma janela 3x3
+    :param matrix: imagem a qual deve ser aplicado o filtro
+    :param janela: inteiro que dirá a dimensão da janela, obrseva-se que será apenas um unico numero e a janela sera quadrada
+    :param limiar: valor do limiar
+    :return: copia da imagem com o filtro aplicado
+    '''
+    nLins, nCols, canais = status_img(matrix)
+    ch = 0
+    janela = 3 #sempre 3x3
+    #não percorremos a coluna 0, nem a ultima coluna
+    #nao percorreremos a linha 0 nem a ultima linha
+
+    #os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
+    #ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante. Nessa organização é ficilitada a aplicação de
+    #pesos
+
+    for i in range(1, nLins-1):
+        for j in range(1, nCols-1):
+            pixels = []
+            pixels.append((matrix[i][j][ch])*4)         #central
+            pixels.append((matrix[i-1][j][ch])*2)       #norte
+            pixels.append(matrix[i-1][j+1][ch])     #nordeste
+            pixels.append((matrix[i][j+1][ch])*2)       #leste
+            pixels.append(matrix[i+1][j+1][ch])     #sudeste
+            pixels.append((matrix[i+1][j][ch])*2)      #sul
+            pixels.append(matrix[i+1][j-1][ch])     #sudoeste
+            pixels.append((matrix[i][j+1][ch])*2)    #oeste
+            pixels.append(matrix[i-1][j-1][ch])     #noroeste
+
+            soma = 0
+            for pix in pixels:
+                soma += pix
+            soma = int(soma/16)
+
+            if abs(soma - pixels[0]) > limiar:
+                matrix[i][j][ch] = soma
+            else:
+                #o pixel não é diferente da vizinhança
+                pass
+    return matrix
+
+def filtro_moda(matrix):
+    '''
+    essa função aplica o filtro da moda na imagem dada como entrada
+    :param matrix: a matriz referente a imagem a ser processada
+    :return: a matriz processada pela função
+    '''
+    nLins, nCols, canais = status_img(matrix)
+    ch = 0
+    janela = 3  # sempre 3x3
+    # não percorremos a coluna 0, nem a ultima coluna
+    # nao percorreremos a linha 0 nem a ultima linha
+
+    # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
+    # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
+
+    for i in range(1, nLins-1):
+        for j in range(1, nCols-1):
+            pixels = []
+            pixels.append((matrix[i][j][ch])*4)         #central
+            pixels.append((matrix[i-1][j][ch])*2)       #norte
+            pixels.append(matrix[i-1][j+1][ch])     #nordeste
+            pixels.append((matrix[i][j+1][ch])*2)       #leste
+            pixels.append(matrix[i+1][j+1][ch])     #sudeste
+            pixels.append((matrix[i+1][j][ch])*2)      #sul
+            pixels.append(matrix[i+1][j-1][ch])     #sudoeste
+            pixels.append((matrix[i][j+1][ch])*2)    #oeste
+            pixels.append(matrix[i-1][j-1][ch])     #noroeste
+
+            aux = pd.Series(pixels)
+            moda = aux.mode().to_list()
+            moda = moda[0]
+
+            matrix[i][j][ch] = moda
+    return matrix
+
+
+def filtro_mediana():
+    pass

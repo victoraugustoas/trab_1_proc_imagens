@@ -134,3 +134,6 @@ imagens/*.gif
 
 # data folder
 main/data/*
+
+# tester
+main/tester.py
