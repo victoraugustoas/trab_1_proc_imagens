@@ -192,34 +192,26 @@ def histogram_global(matrix):
     return (hist_blue, hist_green, hist_red)
 
 
-def histogram_local(matrix, nparts):
+def histogram_local(matrix, nparts, channel=0):
     """
         Recebe o obj da img
 
-        nparts: qtd de partições da imagem
+        nparts: qtd de partições da imagem (n*n)
+        
+        channel: valor do canal b=1, g=2, r=3
 
         retorna uma lista com vetores de histograma
     """
 
-    nrows, ncols, channels = status_img(matrix)
-
-    size_part = trunc(ncols / nparts)
+    partition = generate_tiles(matrix, nparts)
 
     hist_parts = []
 
-    for part in range(nparts):
-
-        hist = np.zeros(256)
-
-        start = part * size_part
-        final = (part * size_part) + size_part
-
-        for i in range(nrows):
-            for j in range(start, final):
-                pixel_value = matrix[i][j][0]
-                hist[pixel_value] += 1
-
-        hist_parts.append(hist)
+    for i,part in enumerate(partition):
+        if channel:
+            hist_parts.append(histogram_global(part)[channel-1])
+        else:
+            hist_parts.append(histogram_global(part))
 
     return hist_parts
 
@@ -463,3 +455,41 @@ def equalize_hist(matrix, hist_vect):
         hist_vect[i] = trunc(hist_vect[i])
 
     return hist_vect
+
+
+def generate_tiles(matrix, size=5):
+    """
+        Retorna um array com as partições da imagem
+
+        matrix: obj da img
+        size: tamanho da grid (n*n)
+    """    
+    nrows, ncols, channels = status_img(matrix)
+
+    chunk_row = trunc(nrows / size)
+    chunk_col = trunc(ncols / size)
+
+    tiles = []
+
+    for i in range(size):
+        for j in range(size):
+            part = matrix[(i*chunk_row):(i*chunk_row)+chunk_row, (j*chunk_col):(j*chunk_col)+chunk_col,:]
+            tiles.append(part)
+
+    return tiles
+
+def join_tiles(tiles, size=5):
+    """
+        Junta todos as partes da img em uma matriz
+
+        tiles: array com as partes da img
+        size: tamanho da grid (n*n)
+    """
+    aux_matrix = []
+    for j in range(size):
+        j = j*size
+        aux_arr = np.concatenate(tiles[j:j+size], axis=1)
+        aux_matrix.append(aux_arr)
+    aux_matrix = np.concatenate(aux_matrix[:], axis=0)
+    
+    return aux_matrix
