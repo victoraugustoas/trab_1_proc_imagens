@@ -50,11 +50,11 @@ def status_img(matrix):
 
 
 def generate_histogram(
-    names,
     values,
     title,
     name_file,
     color,
+    names=np.arange(0, 256),
     path="./data",
     xlabel="Valores de cinza",
     ylabel="Frequência",
@@ -89,6 +89,9 @@ def brightness(matrix, coefficient):
     nrows = matrix.shape[0]
     ncols = matrix.shape[1]
 
+    # copia a matriz
+    matrix = matrix.copy()
+
     if coefficient < 0:
         return False
 
@@ -114,6 +117,8 @@ def negative(matrix):
     ncols = matrix.shape[1]
     channels = matrix.shape[2]
 
+    matrix = matrix.copy()
+
     for i in range(nrows):
         for j in range(ncols):
             for channel in range(channels):
@@ -137,33 +142,27 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
         prefix: prefixo do nome do arquivo
     """
 
-    # label do eixo x
-    names = np.arange(0, 256)
-
     # gera os histogramas
     generate_histogram(
-        names,
         hist_blue,
         "Histograma Global - Azul",
         prefix + "histograma_global_blue.jpg",
         "blue",
-        path,
+        path=path,
     )
     generate_histogram(
-        names,
         hist_green,
         "Histograma Global - Verde",
         prefix + "histograma_global_green.jpg",
         "green",
-        path,
+        path=path,
     )
     generate_histogram(
-        names,
         hist_red,
         "Histograma Global - Vermelho",
         prefix + "histograma_global_red.jpg",
         "red",
-        path,
+        path=path,
     )
 
     return True
@@ -380,3 +379,50 @@ def filtro_moda(matrix):
 
 def filtro_mediana():
     pass
+
+def hist_to_img(matrix, hist):
+    """
+        Coloca os valores do histograma na imagem
+        
+        matrix: matriz em escala de cinza
+        hist: histograma com os valores
+    """
+
+    nrows, ncols, channels = status_img(matrix)
+
+    matrix = matrix.copy()
+
+    for i in range(nrows):
+        for j in range(ncols):
+            matrix[i][j][0] = hist[matrix[i][j][0]]
+
+    return matrix[:, :, 0]
+
+
+def equalize_hist(matrix, hist_vect):
+    """
+        Equaliza o histograma de uma imagem em escala de cinza
+    """
+    nrows, ncols, channels = status_img(matrix)
+
+    # realiza uma cópia da variável para n alterar a mesma
+    hist_vect = hist_vect.copy()
+
+    total_pixels = nrows * ncols
+
+    # calcula a probabilidade de cada cor no histograma
+    for i, ele in enumerate(hist_vect):
+        hist_vect[i] = hist_vect[i] / total_pixels
+
+    # calcula a probabilidade acumulativa
+    for i in range(1, len(hist_vect)):
+        hist_vect[i] += hist_vect[i - 1]
+
+    # normaliza os valores de volta para o espaço de 256 cores
+    for i, ele in enumerate(hist_vect):
+        hist_vect[i] *= 255
+
+        # pois os valores de cinza são inteiros
+        hist_vect[i] = trunc(hist_vect[i])
+
+    return hist_vect
