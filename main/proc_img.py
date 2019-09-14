@@ -524,10 +524,76 @@ def quantizacao(matrixInit, K):
     Z = np.float32(Z)
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    ret, label, center = cv2.kmeans(Z, K, None, criteria, 25, cv2.KMEANS_RANDOM_CENTERS) #RANDOM OU PP
 
     # Now convert back into uint8, and make original image
     center = np.uint8(center)
     res = center[label.flatten()]
     res2 = res.reshape(img.shape)
     return res2
+
+def quantizacao_cinza(matrixInit, qntd_cores):
+    r = 16
+    print("quantidade de tons de cinza:", 255/r)
+    imgQuant = np.uint8(matrixInit / r) * r
+    return imgQuant
+
+def bic(matrixInit, qntCores):
+    '''
+    Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
+    essa função retornará a imagem com os pixels transformados
+    :param matrixInit: imagem de entrada, já quantizada
+    :param qntCores: quantidade de cores em a imagem possui
+    :return:
+    '''
+    borda = 0
+    interior = 0
+    matrix = matrixInit.copy()
+    nLins, nCols, canais = status_img(matrix)
+    hist_high = []
+    hist_low = []
+    canais = 1
+    dict_cor_high = {}
+    dict_cor_low = {}
+
+    for i in range(256):
+        hist_high.append(0)
+        hist_low.append(0)
+
+    for i in range(1, nLins - 1):
+        for j in range(1, nCols - 1):
+            for ch in range(canais):
+                #print(matrix[i][j][ch])
+                #pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                central = matrix[i][j][ch]  # central
+                norte = matrix[i - 1][j][ch]  # norte
+                direita = matrix[i][j + 1][ch]  # leste
+                sul = matrix[i + 1][j][ch]  # sul
+                esquerda = matrix[i][j - 1][ch]  # oeste
+
+                if norte == direita == esquerda == sul:
+                    # central é interior
+                    #matrix[i][j][ch] = 255
+                    pix = matrix[i][j][ch]
+                    hist_high[pix] += 1
+                    if dict_cor_high.get(str(pix), 0) == 0:
+                        dict_cor_high[str(pix)] = 1
+                    else:
+                        dict_cor_high[str(pix)] += 1
+                else:
+                    # central é borda
+                    #matrix[i][j][ch] = 0
+                    pix = matrix[i][j][ch]
+                    hist_low[pix] += 1
+                    if dict_cor_low.get(str(pix), 0) == 0:
+                        dict_cor_low[str(pix)] = 1
+                    else:
+                        dict_cor_low[str(pix)] += 1
+    print("Dict High")
+    print(dict_cor_high)
+    print(len(dict_cor_high.keys()))
+
+    print("Dict Low")
+    print(dict_cor_low)
+    print(len(dict_cor_low.keys()))
+    return (hist_high, hist_low)
