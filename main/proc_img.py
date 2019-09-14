@@ -511,3 +511,23 @@ def join_tiles(tiles, size=5):
     aux_matrix = np.concatenate(aux_matrix[:], axis=0)
 
     return aux_matrix
+
+def quantizacao(matrixInit, K):
+    '''
+    Essa funçao pegará uma imagem com num numero N de cores e ira produzir um outro com apenas K cores
+    :param matrixInit: matrix de entrada a função de quantização
+    :param K: numero de cores em que a imagem deve ser clusterizada
+    :return: uma matriz resultando do processo com K cores
+    '''
+    img = matrixInit.copy()
+    Z = img.reshape((-1, 3))
+    Z = np.float32(Z)
+
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    # Now convert back into uint8, and make original image
+    center = np.uint8(center)
+    res = center[label.flatten()]
+    res2 = res.reshape(img.shape)
+    return res2
