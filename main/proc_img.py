@@ -294,11 +294,11 @@ def generate_noise(matrixInit, percent, noise):
     return matrix
 
 
-def filtro_media(matrixInit, limiar):
+def filtro_media(matrixInit, iterations):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
     :param matrixInit: imagem a qual deve ser aplicado o filtro
-    :param limiar: valor do limiar
+    :param iterations: valor das k iterações
     :return: copia da imagem com o filtro aplicado
     """
 
@@ -312,30 +312,31 @@ def filtro_media(matrixInit, limiar):
     # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante. Nessa organização é ficilitada a aplicação de
     # pesos
+    for k in range(iterations):
+        for i in range(1, nLins - 1):
+            for j in range(1, nCols - 1):
+                for ch in range(canais):
+                    pixels = []
+                    pixels.append(matrix[i][j][ch])  # central
+                    pixels.append(matrix[i - 1][j][ch])  # norte
+                    pixels.append(matrix[i - 1][j + 1][ch])  # nordeste
+                    pixels.append(matrix[i][j + 1][ch])  # leste
+                    pixels.append(matrix[i + 1][j + 1][ch])  # sudeste
+                    pixels.append(matrix[i + 1][j][ch])  # sul
+                    pixels.append(matrix[i + 1][j - 1][ch])  # sudoeste
+                    pixels.append(matrix[i][j - 1][ch])  # oeste
+                    pixels.append(matrix[i - 1][j - 1][ch])  # noroeste
 
-    for i in range(1, nLins - 1):
-        for j in range(1, nCols - 1):
-            pixels = []
-            pixels.append(matrix[i][j][ch])  # central
-            pixels.append(matrix[i - 1][j][ch])  # norte
-            pixels.append(matrix[i - 1][j + 1][ch])  # nordeste
-            pixels.append(matrix[i][j + 1][ch])  # leste
-            pixels.append(matrix[i + 1][j + 1][ch])  # sudeste
-            pixels.append(matrix[i + 1][j][ch])  # sul
-            pixels.append(matrix[i + 1][j - 1][ch])  # sudoeste
-            pixels.append(matrix[i][j - 1][ch])  # oeste
-            pixels.append(matrix[i - 1][j - 1][ch])  # noroeste
+                    soma = 0
+                    for pix in pixels:
+                        soma += pix
+                    soma = int(soma / 9)
 
-            soma = 0
-            for pix in pixels:
-                soma += pix
-            soma = int(soma / 9)
+                    if soma <= 255:
+                        matrix[i][j][ch] = soma
+                    else:
+                        matrix[i][j][ch] = 255
 
-            if abs(soma - pixels[0]) > limiar:
-                matrix[i][j][ch] = soma
-            else:
-                # o pixel não é diferente da vizinhança
-                pass
     return matrix
 
 
