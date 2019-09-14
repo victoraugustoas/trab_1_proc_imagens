@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from random import randint
 import pandas as pd
+import copy
 # remove os warnings eventuais
 warnings.simplefilter("ignore")
 
@@ -256,16 +257,16 @@ def generate_position(max_lin, max_col):
     aux = (randint(0, max_lin-1), (randint(0, max_col-1)))
     return tuple(aux)
 
-# ATENÇÃO: a matrix dada como param é alterada
-def generate_noise(matrix, percent, noise):
+
+def generate_noise(matrixInit, percent, noise):
     '''
     dada uma imagem, irá inserir ruido nela (em apenas uma banda), aleatóriamente, obedecendo uma porcentagem.
-    :param matrix: a imagem que se deseja adicionar ruido tipo sal
+    :param matrixInit: a imagem que se deseja adicionar ruido tipo sal
     :param percent: a porcentagem de ruido que se deseja aplicar na imagem (valor inteiro)
     :param noise: variavel que carrega o tipo de ruido, "salt" = branco, "pepper" = preto
     :return: a matrix referente a imagem, porém acrescido de ruido
     '''
-
+    matrix = copy.copy(matrixInit)
     if noise == "salt":
         noise = 255
     elif noise == "pepper":
@@ -298,14 +299,15 @@ def generate_noise(matrix, percent, noise):
 
     return matrix
 
-def filtro_media(matrix, limiar):
+def filtro_media(matrixInit, limiar):
     '''
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
-    :param matrix: imagem a qual deve ser aplicado o filtro
-    :param janela: inteiro que dirá a dimensão da janela, obrseva-se que será apenas um unico numero e a janela sera quadrada
+    :param matrixInit: imagem a qual deve ser aplicado o filtro
     :param limiar: valor do limiar
     :return: copia da imagem com o filtro aplicado
     '''
+
+    matrix = copy.copy(matrixInit)
     nLins, nCols, canais = status_img(matrix)
     ch = 0
     janela = 3 #sempre 3x3
@@ -319,20 +321,20 @@ def filtro_media(matrix, limiar):
     for i in range(1, nLins-1):
         for j in range(1, nCols-1):
             pixels = []
-            pixels.append((matrix[i][j][ch])*4)         #central
-            pixels.append((matrix[i-1][j][ch])*2)       #norte
+            pixels.append(matrix[i][j][ch])         #central
+            pixels.append(matrix[i-1][j][ch])       #norte
             pixels.append(matrix[i-1][j+1][ch])     #nordeste
-            pixels.append((matrix[i][j+1][ch])*2)       #leste
+            pixels.append(matrix[i][j+1][ch])       #leste
             pixels.append(matrix[i+1][j+1][ch])     #sudeste
-            pixels.append((matrix[i+1][j][ch])*2)      #sul
+            pixels.append(matrix[i+1][j][ch])       #sul
             pixels.append(matrix[i+1][j-1][ch])     #sudoeste
-            pixels.append((matrix[i][j+1][ch])*2)    #oeste
+            pixels.append(matrix[i][j-1][ch])       #oeste
             pixels.append(matrix[i-1][j-1][ch])     #noroeste
 
             soma = 0
             for pix in pixels:
                 soma += pix
-            soma = int(soma/16)
+            soma = int(soma/9)
 
             if abs(soma - pixels[0]) > limiar:
                 matrix[i][j][ch] = soma
@@ -341,12 +343,13 @@ def filtro_media(matrix, limiar):
                 pass
     return matrix
 
-def filtro_moda(matrix):
+def filtro_moda(matrixInit):
     '''
     essa função aplica o filtro da moda na imagem dada como entrada
-    :param matrix: a matriz referente a imagem a ser processada
+    :param matrixInit: a matriz referente a imagem a ser processada
     :return: a matriz processada pela função
     '''
+    matrix = copy.copy(matrixInit)
     nLins, nCols, canais = status_img(matrix)
     ch = 0
     janela = 3  # sempre 3x3
@@ -358,27 +361,61 @@ def filtro_moda(matrix):
 
     for i in range(1, nLins-1):
         for j in range(1, nCols-1):
-            pixels = []
-            pixels.append((matrix[i][j][ch])*4)         #central
-            pixels.append((matrix[i-1][j][ch])*2)       #norte
-            pixels.append(matrix[i-1][j+1][ch])     #nordeste
-            pixels.append((matrix[i][j+1][ch])*2)       #leste
-            pixels.append(matrix[i+1][j+1][ch])     #sudeste
-            pixels.append((matrix[i+1][j][ch])*2)      #sul
-            pixels.append(matrix[i+1][j-1][ch])     #sudoeste
-            pixels.append((matrix[i][j+1][ch])*2)    #oeste
-            pixels.append(matrix[i-1][j-1][ch])     #noroeste
+            pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            pixels[0] = matrix[i][j][ch]            # central
+            pixels[1] = matrix[i - 1][j][ch]        # norte
+            pixels[2] = matrix[i - 1][j + 1][ch]    # nordeste
+            pixels[3] = matrix[i][j + 1][ch]        # leste
+            pixels[4] = matrix[i + 1][j + 1][ch]    # sudeste
+            pixels[5] = matrix[i + 1][j][ch]        # sul
+            pixels[6] = matrix[i + 1][j - 1][ch]    # sudoeste
+            pixels[7] = matrix[i][j -1][ch]        # oeste
+            pixels[8] = matrix[i - 1][j - 1][ch]    # noroeste
 
-            aux = pd.Series(pixels)
+            '''aux = pd.Series(pixels)
             moda = aux.mode().to_list()
-            moda = moda[0]
+            moda = moda[0]'''
 
-            matrix[i][j][ch] = moda
+            a = np.array(pixels)
+            counts = np.bincount(a)
+            moda = np.argmax(counts)
+
+            matrix[i][j][ch] = int(moda)
     return matrix
 
 
-def filtro_mediana():
-    pass
+def filtro_mediana(matrixInit):
+    '''
+    essa função aplica o filtro da mediana na imagem dada como entrada
+    :param matrixInit: a matriz referente a imagem a ser processada
+    :return: a matriz processada pela função
+    '''
+    matrix = copy.copy(matrixInit)
+    nLins, nCols, canais = status_img(matrix)
+    ch = 0
+    janela = 3  # sempre 3x3
+    # não percorremos a coluna 0, nem a ultima coluna
+    # nao percorreremos a linha 0 nem a ultima linha
+
+    # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
+    # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
+
+    for i in range(1, nLins-1):
+        for j in range(1, nCols-1):
+            pixels = [0,0,0,0,0,0,0,0,0]
+            pixels[0] = matrix[i][j][ch]         #central
+            pixels[1] = matrix[i-1][j][ch]       #norte
+            pixels[2] = matrix[i-1][j+1][ch]     #nordeste
+            pixels[3] = matrix[i][j+1][ch]      #leste
+            pixels[4] = matrix[i+1][j+1][ch]     #sudeste
+            pixels[5] = matrix[i+1][j][ch]       #sul
+            pixels[6] = matrix[i+1][j-1][ch]     #sudoeste
+            pixels[7] = matrix[i][j-1][ch]      #oeste
+            pixels[8] = matrix[i-1][j-1][ch]     #noroeste
+
+            mediana = int(np.median(pixels))
+            matrix[i][j][ch] = mediana
+    return matrix
 
 def hist_to_img(matrix, hist):
     """
