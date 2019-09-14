@@ -294,7 +294,7 @@ def generate_noise(matrixInit, percent, noise):
     return matrix
 
 
-def filtro_media(matrixInit, iterations):
+def filtro_media(matrixInit, iterations=1):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
     :param matrixInit: imagem a qual deve ser aplicado o filtro
@@ -340,7 +340,7 @@ def filtro_media(matrixInit, iterations):
     return matrix
 
 
-def filtro_moda(matrixInit):
+def filtro_moda(matrixInit, iterations=1):
     """
     essa função aplica o filtro da moda na imagem dada como entrada
     :param matrixInit: a matriz referente a imagem a ser processada
@@ -356,29 +356,30 @@ def filtro_moda(matrixInit):
     # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
 
-    for i in range(1, nLins - 1):
-        for j in range(1, nCols - 1):
-            for ch in range(canais):
-                pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-                pixels[0] = matrixInit[i][j][ch]  # central
-                pixels[1] = matrixInit[i - 1][j][ch]  # norte
-                pixels[2] = matrixInit[i - 1][j + 1][ch]  # nordeste
-                pixels[3] = matrixInit[i][j + 1][ch]  # leste
-                pixels[4] = matrixInit[i + 1][j + 1][ch]  # sudeste
-                pixels[5] = matrixInit[i + 1][j][ch]  # sul
-                pixels[6] = matrixInit[i + 1][j - 1][ch]  # sudoeste
-                pixels[7] = matrixInit[i][j - 1][ch]  # oeste
-                pixels[8] = matrixInit[i - 1][j - 1][ch]  # noroeste
+    for k in range(iterations):
+        for i in range(1, nLins - 1):
+            for j in range(1, nCols - 1):
+                for ch in range(canais):
+                    pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    pixels[0] = matrixInit[i][j][ch]  # central
+                    pixels[1] = matrixInit[i - 1][j][ch]  # norte
+                    pixels[2] = matrixInit[i - 1][j + 1][ch]  # nordeste
+                    pixels[3] = matrixInit[i][j + 1][ch]  # leste
+                    pixels[4] = matrixInit[i + 1][j + 1][ch]  # sudeste
+                    pixels[5] = matrixInit[i + 1][j][ch]  # sul
+                    pixels[6] = matrixInit[i + 1][j - 1][ch]  # sudoeste
+                    pixels[7] = matrixInit[i][j - 1][ch]  # oeste
+                    pixels[8] = matrixInit[i - 1][j - 1][ch]  # noroeste
 
-                """aux = pd.Series(pixels)
-                moda = aux.mode().to_list()
-                moda = moda[0]"""
+                    """aux = pd.Series(pixels)
+                    moda = aux.mode().to_list()
+                    moda = moda[0]"""
 
-                a = np.array(pixels)
-                counts = np.bincount(a)
-                moda = np.argmax(counts)
+                    a = np.array(pixels)
+                    counts = np.bincount(a)
+                    moda = np.argmax(counts)
 
-                matrix[i][j][ch] = int(moda)
+                    matrix[i][j][ch] = int(moda)
     return matrix
 
 
