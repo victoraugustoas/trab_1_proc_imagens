@@ -294,7 +294,7 @@ def generate_noise(matrixInit, percent, noise):
     return matrix
 
 
-def filtro_media(matrixInit, iterations=1):
+def filtro_media(matrixInit, iterations):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
     :param matrixInit: imagem a qual deve ser aplicado o filtro
@@ -313,6 +313,7 @@ def filtro_media(matrixInit, iterations=1):
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante. Nessa organização é ficilitada a aplicação de
     # pesos
     for k in range(iterations):
+        print(k)
         for i in range(1, nLins - 1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
@@ -336,14 +337,14 @@ def filtro_media(matrixInit, iterations=1):
                         matrix[i][j][ch] = soma
                     else:
                         matrix[i][j][ch] = 255
-
     return matrix
 
 
-def filtro_moda(matrixInit, iterations=1):
+def filtro_moda(matrixInit, iterations):
     """
     essa função aplica o filtro da moda na imagem dada como entrada
     :param matrixInit: a matriz referente a imagem a ser processada
+    :param iterations: numero de iterações a ser aplicado na imagem
     :return: a matriz processada pela função
     """
     matrix = matrixInit.copy()
@@ -357,6 +358,7 @@ def filtro_moda(matrixInit, iterations=1):
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
 
     for k in range(iterations):
+        print(k)
         for i in range(1, nLins - 1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
@@ -383,10 +385,11 @@ def filtro_moda(matrixInit, iterations=1):
     return matrix
 
 
-def filtro_mediana(matrixInit):
+def filtro_mediana(matrixInit, iterations):
     """
     essa função aplica o filtro da mediana na imagem dada como entrada
     :param matrixInit: a matriz referente a imagem a ser processada
+    :param iterations: o numero de iterações que o filtro deve ser aplicado
     :return: a matriz processada pela função
     """
     matrix = matrixInit.copy()
@@ -398,22 +401,24 @@ def filtro_mediana(matrixInit):
 
     # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
+    for k in range(iterations):
+        print(k)
+        for i in range(1, nLins - 1):
+            for j in range(1, nCols - 1):
+                for ch in range(canais):
+                    pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                    pixels[0] = matrix[i][j][ch]  # central
+                    pixels[1] = matrix[i - 1][j][ch]  # norte
+                    pixels[2] = matrix[i - 1][j + 1][ch]  # nordeste
+                    pixels[3] = matrix[i][j + 1][ch]  # leste
+                    pixels[4] = matrix[i + 1][j + 1][ch]  # sudeste
+                    pixels[5] = matrix[i + 1][j][ch]  # sul
+                    pixels[6] = matrix[i + 1][j - 1][ch]  # sudoeste
+                    pixels[7] = matrix[i][j - 1][ch]  # oeste
+                    pixels[8] = matrix[i - 1][j - 1][ch]  # noroeste
 
-    for i in range(1, nLins - 1):
-        for j in range(1, nCols - 1):
-            pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-            pixels[0] = matrix[i][j][ch]  # central
-            pixels[1] = matrix[i - 1][j][ch]  # norte
-            pixels[2] = matrix[i - 1][j + 1][ch]  # nordeste
-            pixels[3] = matrix[i][j + 1][ch]  # leste
-            pixels[4] = matrix[i + 1][j + 1][ch]  # sudeste
-            pixels[5] = matrix[i + 1][j][ch]  # sul
-            pixels[6] = matrix[i + 1][j - 1][ch]  # sudoeste
-            pixels[7] = matrix[i][j - 1][ch]  # oeste
-            pixels[8] = matrix[i - 1][j - 1][ch]  # noroeste
-
-            mediana = int(np.median(pixels))
-            matrix[i][j][ch] = mediana
+                    mediana = int(np.median(pixels))
+                    matrix[i][j][ch] = mediana
     return matrix
 
 
