@@ -16,13 +16,16 @@ from random import randint
 warnings.simplefilter("ignore")
 
 
-def open_img(path):
+def open_img(path, gray=False):
     """
         Abre a imagem
 
         path: local da imagem
+        gray: se a imagem será aberta em tons de cinza
     """
-    img = cv2.imread(path)
+    img = cv2.imread(
+        path, cv2.IMREAD_GRAYSCALE if gray == True else cv2.IMREAD_UNCHANGED
+    )
     return img
 
 
@@ -44,9 +47,13 @@ def status_img(matrix):
 
         retorna o numero de linhas, colunas e canais da img
 
-        retorno (nrows, ncols, channels)
+        retorno (nrows, ncols, channels) se imagem colorida
+        retorno (nrows, ncols) se imagem em escala de cinza
     """
-    return (matrix.shape[0], matrix.shape[1], matrix.shape[2])
+    try:
+        return (matrix.shape[0], matrix.shape[1], matrix.shape[2])
+    except:
+        return (matrix.shape[0], matrix.shape[1])
 
 
 def generate_histogram(
@@ -294,7 +301,7 @@ def generate_noise(matrixInit, percent, noise):
     return matrix
 
 
-def filtro_media(matrixInit, iterations):
+def filtro_media(matrixInit, iterations=1):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
     :param matrixInit: imagem a qual deve ser aplicado o filtro
@@ -313,7 +320,6 @@ def filtro_media(matrixInit, iterations):
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante. Nessa organização é ficilitada a aplicação de
     # pesos
     for k in range(iterations):
-        print(k)
         for i in range(1, nLins - 1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
@@ -340,7 +346,7 @@ def filtro_media(matrixInit, iterations):
     return matrix
 
 
-def filtro_moda(matrixInit, iterations):
+def filtro_moda(matrixInit, iterations=1):
     """
     essa função aplica o filtro da moda na imagem dada como entrada
     :param matrixInit: a matriz referente a imagem a ser processada
@@ -358,7 +364,6 @@ def filtro_moda(matrixInit, iterations):
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
 
     for k in range(iterations):
-        print(k)
         for i in range(1, nLins - 1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
@@ -385,7 +390,7 @@ def filtro_moda(matrixInit, iterations):
     return matrix
 
 
-def filtro_mediana(matrixInit, iterations):
+def filtro_mediana(matrixInit, iterations=1):
     """
     essa função aplica o filtro da mediana na imagem dada como entrada
     :param matrixInit: a matriz referente a imagem a ser processada
@@ -402,7 +407,6 @@ def filtro_mediana(matrixInit, iterations):
     # os vizinhos serão guardados em um vetor na seguinte ordem: sentido horário a partir da celula superior ao pixel
     # ou seja a ordem, central, norte, nordeste, leste, sudeste e assim por diante
     for k in range(iterations):
-        print(k)
         for i in range(1, nLins - 1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
@@ -512,19 +516,22 @@ def join_tiles(tiles, size=5):
 
     return aux_matrix
 
-def quantizacao(matrixInit, K):
-    '''
+
+def quantizacao(matrixInit, K=32):
+    """
     Essa funçao pegará uma imagem com num numero N de cores e ira produzir um outro com apenas K cores
     :param matrixInit: matrix de entrada a função de quantização
     :param K: numero de cores em que a imagem deve ser clusterizada
     :return: uma matriz resultando do processo com K cores
-    '''
+    """
     img = matrixInit.copy()
     Z = img.reshape((-1, 3))
     Z = np.float32(Z)
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    ret, label, center = cv2.kmeans(Z, K, None, criteria, 25, cv2.KMEANS_RANDOM_CENTERS) #RANDOM OU PP
+    ret, label, center = cv2.kmeans(
+        Z, K, None, criteria, 25, cv2.KMEANS_RANDOM_CENTERS
+    )  # RANDOM OU PP
 
     # Now convert back into uint8, and make original image
     center = np.uint8(center)
@@ -532,20 +539,22 @@ def quantizacao(matrixInit, K):
     res2 = res.reshape(img.shape)
     return res2
 
+
 def quantizacao_cinza(matrixInit, qntd_cores):
     r = 16
-    print("quantidade de tons de cinza:", 255/r)
+    print("quantidade de tons de cinza:", 255 / r)
     imgQuant = np.uint8(matrixInit / r) * r
     return imgQuant
 
+
 def bic(matrixInit, qntCores):
-    '''
+    """
     Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
     essa função retornará a imagem com os pixels transformados
     :param matrixInit: imagem de entrada, já quantizada
     :param qntCores: quantidade de cores em a imagem possui
     :return:
-    '''
+    """
     borda = 0
     interior = 0
     matrix = matrixInit.copy()
