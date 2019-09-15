@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 
 from random import randint
 
+from sklearn.cluster import KMeans
+from sklearn.utils import shuffle
+
 # remove os warnings eventuais
 warnings.simplefilter("ignore")
 
@@ -53,7 +56,7 @@ def status_img(matrix):
     try:
         return (matrix.shape[0], matrix.shape[1], matrix.shape[2])
     except:
-        return (matrix.shape[0], matrix.shape[1])
+        return (matrix.shape[0], matrix.shape[1], 1)
 
 
 def generate_histogram(
@@ -177,6 +180,9 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
 
 def histogram_global(matrix):
     nrows, ncols, channels = status_img(matrix)
+
+    matrix = matrix.copy()
+
     hist_blue = np.zeros(256)
     hist_green = np.zeros(256)
     hist_red = np.zeros(256)
@@ -185,7 +191,7 @@ def histogram_global(matrix):
         for j in range(ncols):
             for channel in range(channels):
 
-                pixel_value = matrix[i][j][channel]
+                pixel_value = int(matrix[i][j][channel])
 
                 # canal blue
                 if channel == 0:
@@ -194,8 +200,10 @@ def histogram_global(matrix):
                     hist_green[pixel_value] += 1
                 else:
                     hist_red[pixel_value] += 1
-
-    return (hist_blue, hist_green, hist_red)
+    if channels == 1:
+        return hist_blue
+    else:
+        return (hist_blue, hist_green, hist_red)
 
 
 def histogram_local(matrix, nparts, channel=0):
@@ -538,6 +546,63 @@ def quantizacao(matrixInit, K=32):
     res = center[label.flatten()]
     res2 = res.reshape(img.shape)
     return res2
+
+
+def recreate_img(colors, matrix_to_array, nrows, ncols):
+    """
+        Recria a matriz de imagem, com base nas cores e no vetor da imagem
+
+        colors: vetor de cores com X cores
+        matrix_to_array: vetor de cores da imagem que sofreu quantização
+        nrows: # de linhas da img resultante
+        ncols: # de colunas da img resultante
+    """
+    # colors é um vetor de tamanho X de 3 dimensões se colorida, 1 dimensão se cinza
+    channels = colors.shape[1]
+
+    # cria uma matriz de zeros com dimensões da img
+    img = np.zeros((nrows, ncols, channels))
+
+    idx = 0
+    for row in range(nrows):
+        for col in range(ncols):
+            img[row][col] = colors[matrix_to_array[idx]]
+            idx += 1
+    return img
+
+
+def quantization_colors(matrix, color=32):
+    """
+        Retorna a imagem com redução de cor
+
+        matrix: obj da img
+        color: qtd de cores presentes na imagem resultante
+    """
+    matrix = matrix.copy()
+
+    nrows, ncols, channels = status_img(matrix)
+
+    # transforma a matriz em um vetor
+    matrix_to_array = np.reshape(matrix, (nrows * ncols, channels))
+
+    # para fazer o treinamento do Kmeans, pegamos 1000 elementos aleatórios do vetor de img
+    image_array_sample = shuffle(matrix_to_array, random_state=0)[:1000]
+
+    # fazemos o treinamento do Kmeans com o array de treinamento
+    kmeans = KMeans(n_clusters=color, random_state=0).fit(image_array_sample)
+
+    # vetor com K cores de tamanho nrows*ncols
+    matrix_color_quantizated = kmeans.predict(matrix_to_array)
+
+    # os clusters do Kmeans serão as cores
+    colors = kmeans.cluster_centers_
+
+    # traz os valores para inteiro
+    for i, color_vec in enumerate(colors):
+        for j, color in enumerate(color_vec):
+            colors[i][j] = int(colors[i][j])
+
+    return recreate_img(colors, matrix_color_quantizated, nrows, ncols)
 
 
 def quantizacao_cinza(matrixInit, qntd_cores):
