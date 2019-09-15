@@ -524,30 +524,6 @@ def join_tiles(tiles, size=5):
 
     return aux_matrix
 
-
-def quantizacao(matrixInit, K=32):
-    """
-    Essa funçao pegará uma imagem com num numero N de cores e ira produzir um outro com apenas K cores
-    :param matrixInit: matrix de entrada a função de quantização
-    :param K: numero de cores em que a imagem deve ser clusterizada
-    :return: uma matriz resultando do processo com K cores
-    """
-    img = matrixInit.copy()
-    Z = img.reshape((-1, 3))
-    Z = np.float32(Z)
-
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    ret, label, center = cv2.kmeans(
-        Z, K, None, criteria, 25, cv2.KMEANS_RANDOM_CENTERS
-    )  # RANDOM OU PP
-
-    # Now convert back into uint8, and make original image
-    center = np.uint8(center)
-    res = center[label.flatten()]
-    res2 = res.reshape(img.shape)
-    return res2
-
-
 def recreate_img(colors, matrix_to_array, nrows, ncols):
     """
         Recria a matriz de imagem, com base nas cores e no vetor da imagem
@@ -604,24 +580,15 @@ def quantization_colors(matrix, color=32):
 
     return recreate_img(colors, matrix_color_quantizated, nrows, ncols)
 
-
-def quantizacao_cinza(matrixInit, qntd_cores):
-    r = 16
-    print("quantidade de tons de cinza:", 255 / r)
-    imgQuant = np.uint8(matrixInit / r) * r
-    return imgQuant
-
-
+#SETADO PARA 1 CANAL APENAS
 def bic(matrixInit, qntCores):
     """
     Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
     essa função retornará a imagem com os pixels transformados
     :param matrixInit: imagem de entrada, já quantizada
-    :param qntCores: quantidade de cores em a imagem possui
-    :return:
+    :param qntCores: quantidade de cores em a imagem possui para construir o vetor de saida = qntdcores * 2
+    :return: um vetor contendo a contagem da intensidade de cor dos pixel nos niveis high e low, seu tamanho será qntdcores *2
     """
-    borda = 0
-    interior = 0
     matrix = matrixInit.copy()
     nLins, nCols, canais = status_img(matrix)
     hist_high = []
@@ -629,6 +596,9 @@ def bic(matrixInit, qntCores):
     canais = 1
     dict_cor_high = {}
     dict_cor_low = {}
+    saida = []
+    for x in range(qntCores):
+        saida.append(0)
 
     for i in range(256):
         hist_high.append(0)
@@ -649,7 +619,7 @@ def bic(matrixInit, qntCores):
                     # central é interior
                     #matrix[i][j][ch] = 255
                     pix = matrix[i][j][ch]
-                    hist_high[pix] += 1
+                    hist_high[int(pix)] += 1
                     if dict_cor_high.get(str(pix), 0) == 0:
                         dict_cor_high[str(pix)] = 1
                     else:
@@ -658,16 +628,25 @@ def bic(matrixInit, qntCores):
                     # central é borda
                     #matrix[i][j][ch] = 0
                     pix = matrix[i][j][ch]
-                    hist_low[pix] += 1
+                    hist_low[int(pix)] += 1
                     if dict_cor_low.get(str(pix), 0) == 0:
                         dict_cor_low[str(pix)] = 1
                     else:
                         dict_cor_low[str(pix)] += 1
-    print("Dict High")
-    print(dict_cor_high)
-    print(len(dict_cor_high.keys()))
 
-    print("Dict Low")
-    print(dict_cor_low)
-    print(len(dict_cor_low.keys()))
-    return (hist_high, hist_low)
+    aux_high = []
+    aux_low = []
+    for i in dict_cor_high.keys():
+        aux_high.append((int(float(i)), dict_cor_high[i]))
+
+    for i in range(qntCores - len(aux_high)):
+        aux_high.append((0, 0))
+
+    for i in dict_cor_low.keys():
+        aux_low.append((int(float(i)), dict_cor_low[i]))
+
+    for i in range(qntCores - len(aux_low)):
+        aux_low.append((0, 0))
+
+    #print(len(aux_high), len(aux_low))
+    return aux_high + aux_low
