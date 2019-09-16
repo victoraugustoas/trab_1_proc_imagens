@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from random import randint
-
+from math import sqrt, pow
 from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
 
@@ -650,3 +650,46 @@ def bic(matrixInit, qntCores):
 
     #print(len(aux_high), len(aux_low))
     return aux_high + aux_low
+
+def filtro_sobel(matrixInit):
+    '''
+    :param matrixInit: matrix inicial EM TONS DE CINZA  e quantizada passada por parametro, ou seja é a imagem ao
+                       qual o filtro será aplicado
+    :return: matrix processada com as bordas realçadas
+    '''
+    matrix = matrixInit.copy()
+    matrixX = matrixInit.copy()
+    matrixY = matrixInit.copy()
+    nLins, nCols, canais = status_img(matrix)
+
+    for i in range(1, nLins - 1):
+        for j in range(1, nCols - 1):
+            a = int(matrix[i - 1][j - 1][0])    # noroeste
+            b = int(matrix[i - 1][j][0])        # norte
+            c = int(matrix[i - 1][j + 1][0])    # nordeste
+            d = int(matrix[i][j - 1][0])        # oeste
+            e = int(matrix[i][j][0])            # central
+            f = int(matrix[i][j + 1][0])        # leste
+            g = int(matrix[i + 1][j - 1][0])    # sudoeste
+            h = int(matrix[i + 1][j][0])        # sul
+            aux = int(matrix[i + 1][j + 1][0])  # sudeste
+
+            Sx1 = c + 2*f + aux
+            Sx2 = a + 2*d + g
+            Sx = Sx1 - Sx2
+            matrixX[i][j][0] = Sx
+
+            Sy1 = g + 2*h + aux
+            Sy2 = a + 2*b + c
+            Sy = Sy1 - Sy2
+            matrixY[i][j][0] = Sy
+
+    for i in range(nLins-1):
+        for j in range(nCols-1):
+            Sx = matrixX[i][j][0]
+            Sy = matrixY[i][j][0]
+
+            Sx = int(pow(Sx, 2))
+            Sy = int(pow(Sy, 2))
+            matrix[i][j][0] = int(sqrt(Sx + Sy))
+    return matrix
