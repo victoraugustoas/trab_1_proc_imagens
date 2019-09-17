@@ -29,6 +29,7 @@ def open_img(path, gray=False):
     img = cv2.imread(
         path, cv2.IMREAD_GRAYSCALE if gray == True else cv2.IMREAD_UNCHANGED
     )
+    img = img.reshape(status_img(img))
     return img
 
 
@@ -179,6 +180,14 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
 
 
 def histogram_global(matrix):
+    """
+        Calcula o histograma global da imagem e retorna 3 vetores
+
+        matrix: obj da img
+
+        retorna (hist_blue, hist_green, hist_red) para img com 3 bandas
+        retorna (hist_blue) para img com 1 banda
+    """
     nrows, ncols, channels = status_img(matrix)
 
     matrix = matrix.copy()
@@ -524,6 +533,7 @@ def join_tiles(tiles, size=5):
 
     return aux_matrix
 
+
 def recreate_img(colors, matrix_to_array, nrows, ncols):
     """
         Recria a matriz de imagem, com base nas cores e no vetor da imagem
@@ -580,7 +590,8 @@ def quantization_colors(matrix, color=32):
 
     return recreate_img(colors, matrix_color_quantizated, nrows, ncols)
 
-#SETADO PARA 1 CANAL APENAS
+
+# SETADO PARA 1 CANAL APENAS
 def bic(matrixInit, qntCores):
     """
     Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
@@ -648,15 +659,15 @@ def bic(matrixInit, qntCores):
     for i in range(qntCores - len(aux_low)):
         aux_low.append((0, 0))
 
-    #print(len(aux_high), len(aux_low))
     return aux_high + aux_low
 
+
 def filtro_sobel(matrixInit):
-    '''
+    """
     :param matrixInit: matrix inicial EM TONS DE CINZA  e quantizada passada por parametro, ou seja é a imagem ao
                        qual o filtro será aplicado
     :return: matrix processada com as bordas realçadas
-    '''
+    """
     matrix = matrixInit.copy()
     matrixX = matrixInit.copy()
     matrixY = matrixInit.copy()
@@ -664,32 +675,59 @@ def filtro_sobel(matrixInit):
 
     for i in range(1, nLins - 1):
         for j in range(1, nCols - 1):
-            a = int(matrix[i - 1][j - 1][0])    # noroeste
-            b = int(matrix[i - 1][j][0])        # norte
-            c = int(matrix[i - 1][j + 1][0])    # nordeste
-            d = int(matrix[i][j - 1][0])        # oeste
-            e = int(matrix[i][j][0])            # central
-            f = int(matrix[i][j + 1][0])        # leste
-            g = int(matrix[i + 1][j - 1][0])    # sudoeste
-            h = int(matrix[i + 1][j][0])        # sul
+            a = int(matrix[i - 1][j - 1][0])  # noroeste
+            b = int(matrix[i - 1][j][0])  # norte
+            c = int(matrix[i - 1][j + 1][0])  # nordeste
+            d = int(matrix[i][j - 1][0])  # oeste
+            e = int(matrix[i][j][0])  # central
+            f = int(matrix[i][j + 1][0])  # leste
+            g = int(matrix[i + 1][j - 1][0])  # sudoeste
+            h = int(matrix[i + 1][j][0])  # sul
             aux = int(matrix[i + 1][j + 1][0])  # sudeste
 
-            Sx1 = c + 2*f + aux
-            Sx2 = a + 2*d + g
+            Sx1 = c + 2 * f + aux
+            Sx2 = a + 2 * d + g
             Sx = Sx1 - Sx2
             matrixX[i][j][0] = Sx
 
-            Sy1 = g + 2*h + aux
-            Sy2 = a + 2*b + c
+            Sy1 = g + 2 * h + aux
+            Sy2 = a + 2 * b + c
             Sy = Sy1 - Sy2
             matrixY[i][j][0] = Sy
 
-    for i in range(nLins-1):
-        for j in range(nCols-1):
+    for i in range(nLins - 1):
+        for j in range(nCols - 1):
             Sx = matrixX[i][j][0]
             Sy = matrixY[i][j][0]
 
             Sx = int(pow(Sx, 2))
             Sy = int(pow(Sy, 2))
             matrix[i][j][0] = int(sqrt(Sx + Sy))
+    return matrix
+
+
+def linear_enhancement(matrix, a, b):
+    """
+        Altera o contraste da imagem e brilho de acordo com os fatores de parametro
+
+        matrix: obj da img
+        a: inclinação da reta, altera o contraste da img
+        b: altera o brilho da img
+    """
+
+    nrows, ncols, channels = status_img(matrix)
+    matrix = matrix.copy()
+
+    for row in range(nrows):
+        for col in range(ncols):
+            for channel in range(channels):
+                pixel_value = matrix[row][col][channel]
+                pixel_value = int(a * pixel_value + b)
+
+                # realce linear
+                if pixel_value >= 255:
+                    pixel_value = 255
+                
+                matrix[row][col][channel] = pixel_value
+
     return matrix
