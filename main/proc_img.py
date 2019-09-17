@@ -591,75 +591,90 @@ def quantization_colors(matrix, color=32):
     return recreate_img(colors, matrix_color_quantizated, nrows, ncols)
 
 
+def arrays_equal(*arrays):
+    bool_verification = True
+    for idx in range(1, len(arrays)):
+        bool_verification = (
+            np.array_equal(arrays[idx - 1], arrays[idx]) and bool_verification
+        )
+    return bool_verification
+
+
 # SETADO PARA 1 CANAL APENAS
 def bic(matrixInit, qntCores):
     """
     Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
     essa função retornará a imagem com os pixels transformados
     :param matrixInit: imagem de entrada, já quantizada
-    :param qntCores: quantidade de cores em a imagem possui para construir o vetor de saida = qntdcores * 2
-    :return: um vetor contendo a contagem da intensidade de cor dos pixel nos niveis high e low, seu tamanho será qntdcores *2
+    :return: um vetor contendo a contagem da intensidade de cor dos pixel nos niveis high e low, sendo a primeira posição a paleta de cores
+    a segunda posição o vetor de high e a segunda posição o vetor de low
     """
     matrix = matrixInit.copy()
     nLins, nCols, canais = status_img(matrix)
-    hist_high = []
-    hist_low = []
-    canais = 1
+
     dict_cor_high = {}
     dict_cor_low = {}
-    saida = []
-    for x in range(qntCores):
-        saida.append(0)
-
-    for i in range(256):
-        hist_high.append(0)
-        hist_low.append(0)
 
     for i in range(1, nLins - 1):
         for j in range(1, nCols - 1):
-            for ch in range(canais):
-                #print(matrix[i][j][ch])
-                #pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-                central = matrix[i][j][ch]  # central
-                norte = matrix[i - 1][j][ch]  # norte
-                direita = matrix[i][j + 1][ch]  # leste
-                sul = matrix[i + 1][j][ch]  # sul
-                esquerda = matrix[i][j - 1][ch]  # oeste
+            # pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+            central = matrix[i][j]  # central
+            norte = matrix[i - 1][j]  # norte
+            direita = matrix[i][j + 1]  # leste
+            sul = matrix[i + 1][j]  # sul
+            esquerda = matrix[i][j - 1]  # oeste
 
-                if norte == direita == esquerda == sul:
-                    # central é interior
-                    #matrix[i][j][ch] = 255
-                    pix = matrix[i][j][ch]
-                    hist_high[int(pix)] += 1
-                    if dict_cor_high.get(str(pix), 0) == 0:
-                        dict_cor_high[str(pix)] = 1
-                    else:
-                        dict_cor_high[str(pix)] += 1
+            if arrays_equal(central, norte, direita, sul, esquerda):
+                # central é interior
+                # matrix[i][j] = 255
+                pix = matrix[i][j]
+
+                if dict_cor_high.get(str(pix), 0) == 0:
+                    dict_cor_high[str(pix)] = 1
                 else:
-                    # central é borda
-                    #matrix[i][j][ch] = 0
-                    pix = matrix[i][j][ch]
-                    hist_low[int(pix)] += 1
-                    if dict_cor_low.get(str(pix), 0) == 0:
-                        dict_cor_low[str(pix)] = 1
-                    else:
-                        dict_cor_low[str(pix)] += 1
+                    dict_cor_high[str(pix)] += 1
+            else:
+                # central é borda
+                # matrix[i][j] = 0
+                pix = matrix[i][j]
 
-    aux_high = []
-    aux_low = []
-    for i in dict_cor_high.keys():
-        aux_high.append((int(float(i)), dict_cor_high[i]))
+                if dict_cor_low.get(str(pix), 0) == 0:
+                    dict_cor_low[str(pix)] = 1
+                else:
+                    dict_cor_low[str(pix)] += 1
 
-    for i in range(qntCores - len(aux_high)):
-        aux_high.append((0, 0))
+    # monta a paleta de cores da imagem
+    meta = []
+    idx = 0
+    for name in dict_cor_high.keys():
+        filtered = filter(lambda x: x.get("color") == name, meta)
+        if len(list(filtered)) == 0:
+            meta.append({"color": name, "index": idx})
+            idx += 1
 
-    for i in dict_cor_low.keys():
-        aux_low.append((int(float(i)), dict_cor_low[i]))
+    for name in dict_cor_low.keys():
+        filtered = filter(lambda x: x.get("color") == name, meta)
+        if len(list(filtered)) == 0:
+            meta.append({"color": name, "index": idx})
+            idx += 1
 
-    for i in range(qntCores - len(aux_low)):
-        aux_low.append((0, 0))
+    response_interno = [None for x in meta]
+    for info in meta:
+        color = info.get("color")
+        idx = info.get("index")
 
-    return aux_high + aux_low
+        if dict_cor_high.get(color):
+            response_interno[idx] = dict_cor_high.get(color)
+
+    response_externo = [None for x in meta]
+    for info in meta:
+        color = info.get("color")
+        idx = info.get("index")
+
+        if dict_cor_low.get(color):
+            response_externo[idx] = dict_cor_low.get(color)
+
+    return [meta, response_interno, response_externo]
 
 
 def filtro_sobel(matrixInit):
@@ -727,7 +742,7 @@ def linear_enhancement(matrix, a, b):
                 # realce linear
                 if pixel_value >= 255:
                     pixel_value = 255
-                
+
                 matrix[row][col][channel] = pixel_value
 
     return matrix
