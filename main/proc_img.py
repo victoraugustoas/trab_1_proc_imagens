@@ -746,3 +746,28 @@ def linear_enhancement(matrix, a, b):
                 matrix[row][col][channel] = pixel_value
 
     return matrix
+
+def fatiamento(matrizInit, nv0 = 0, nv1 = 190, limiar = 120):
+    '''
+    Essa função realiza o fatiamento do histograma, de forma que se o valor de um pixel for inferior ao limiar ele será
+    setado para o valor de nivel 0, caso o valor seja igual ou maior ao limiar ele será setado para o nivel 1
+    :param matrizInit: imagem de entrada para o filtro, deve ser uma imagem em tom de cinza
+    :param nv0: é o nivel (cor) que deve ser ajustado caso o pixel nao atenda o limiar
+    :param nv1: é o nivel (cor) que deve ser ajustado caso o pixel atinja o limiar
+    :param limiar: é o valor de corte que deve ser obedecido
+    :return: imagem em escala de cinza com os valores ajustados
+    '''
+
+    nrows, ncols, channels = status_img(matrizInit)
+    if channels > 2:
+        raise NotImplementedError("A função só está implementada para imagens em tons de cinza!")
+    matriz = matrizInit.copy()
+
+    for i in range(nrows):
+        for j in range(ncols):
+            if matriz[i][j] < limiar:
+                matriz[i][j] = nv0
+            else:
+                matriz[i][j] = nv1
+
+    return matriz
