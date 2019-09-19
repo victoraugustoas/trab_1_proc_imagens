@@ -103,9 +103,6 @@ def brightness(matrix, coefficient):
     # copia a matriz
     matrix = matrix.copy()
 
-    if coefficient < 0:
-        return False
-
     for i in range(nrows):
         for j in range(ncols):
 
@@ -114,6 +111,8 @@ def brightness(matrix, coefficient):
                 sum_ = coefficient + matrix[i][j][channel]
                 if sum_ >= 255:
                     matrix[i][j][channel] = 255
+                elif sum_ <= 0:
+                    matrix[i][j][channel] = 0
                 else:
                     matrix[i][j][channel] = sum_
 
@@ -465,6 +464,9 @@ def hist_to_img(matrix, hist):
 def equalize_hist(matrix, hist_vect):
     """
         Equaliza o histograma de uma imagem em escala de cinza
+
+        matrix: obj da img
+        hist_vect: histograma da imagem em uma banda
     """
     nrows, ncols, channels = status_img(matrix)
 

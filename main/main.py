@@ -1,40 +1,70 @@
 import proc_img as cv3
 
-PATH_IMG = "../imagens/aviao.jpg"
+from pprint import pprint
+
+PATH_IMG = "../imagens/Lenna.png"
 PATH_DATA = "./data"
 IMG = cv3.open_img(PATH_IMG)
+IMG_CINZA = cv3.open_img(PATH_IMG, gray=True)
 
-# calcula os histogramas em X partições, salva os vetores concatenando-os em um arquivo
-print(
-    "histograma local" + ":",
-    cv3.save_vector(PATH_DATA, *cv3.histogram_local(IMG, 5, 1), name="local_hist.txt"),
-)
+# # alteração de brilho
+# print("brilho:", cv3.save_img(PATH_DATA, "img_brilho.jpg", cv3.brightness(IMG, -100)))
 
-HIST_GLOBAL = cv3.histogram_global(IMG)
-# salva os vetores do histograma global
-cv3.save_vector(PATH_DATA, HIST_GLOBAL[0], name="histograma_global_blue.txt")
-cv3.save_vector(PATH_DATA, HIST_GLOBAL[1], name="histograma_global_green.txt")
-cv3.save_vector(PATH_DATA, HIST_GLOBAL[2], name="histograma_global_red.txt")
+# # imagem negativa
+# print("negativa:", cv3.save_img(PATH_DATA, "img_negativa.jpg", cv3.negative(IMG)))
 
-# gera os histogramas globais da imagem
-print("histograma global" + ":", cv3.generate_histograms(*HIST_GLOBAL, PATH_DATA))
+# hist = cv3.histogram_global(IMG)
 
-HIST_EQUALIZED = cv3.equalize_hist(IMG, HIST_GLOBAL[0])
-IMG_EQUALIZED = cv3.save_img(
-    PATH_DATA, "IMG_EQUALIZED.jpg", cv3.hist_to_img(IMG, HIST_EQUALIZED)
-)
-IMG_EQUALIZED = cv3.open_img("./data/IMG_EQUALIZED.jpg")
+# cv3.save_vector(PATH_DATA, hist[0], prefix="blue_", name="hist_global.txt")
+# cv3.save_vector(PATH_DATA, hist[1], prefix="green_", name="hist_global.txt")
+# cv3.save_vector(PATH_DATA, hist[2], prefix="red_", name="hist_global.txt")
 
-HIST_GLOBAL_EQUALIZED = cv3.histogram_global(IMG_EQUALIZED)
-cv3.generate_histogram(
-    HIST_GLOBAL_EQUALIZED[0], "Histograma equalizado", "equalized_histogram.jpg", "gray"
-)
+# # histograma global
+# print(
+#     "Hist. global:",
+#     cv3.generate_histograms(*cv3.histogram_global(IMG), PATH_DATA, "global_"),
+# )
 
-print("Equalização de histograma:", True)
+# histograma local
+# print(
+#     "Hist. local",
+#     cv3.save_vector(
+#         PATH_DATA,
+#         *cv3.histogram_local(IMG, 5, 1),
+#         prefix="hist_local_",
+#         name="vectors.txt",
+#     ),
+# )
+
+# # questão 5
+# # equalização de histograma
+# print(
+#     "equalização de histograma:",
+#     cv3.save_img(
+#         PATH_DATA,
+#         "img_hist_equalizada.jpg",
+#         cv3.hist_to_img(
+#             IMG_CINZA, cv3.equalize_hist(IMG, cv3.histogram_global(IMG_CINZA))
+#         ),
+#     ),
+# )
+
+# # fatiamento
+# cv3.save_img(PATH_DATA, "fatiamento.jpg", cv3.fatiamento(IMG_CINZA))
+
+# # equalização linear
+# cv3.save_img(PATH_DATA, "equalização_linear.jpg", cv3.linear_enhancement(IMG, 1.50, 20))
+
+cv3.save_img(PATH_DATA, "quantizada.jpg", cv3.quantization_colors(IMG))
+
+# questão 7
+print("sobel ...")
+IMG_QUANT = cv3.quantization_colors(IMG_CINZA)
+cv3.save_img(PATH_DATA, "sobel.jpg", cv3.filtro_sobel(IMG_QUANT))
 
 
-# altera o brilho da img
-print("brilho" + ":", cv3.save_img(PATH_DATA, "brilho.jpg", cv3.brightness(IMG, 120)))
+# questão 8
+print("bic")
+IMG_QUANT = cv3.quantization_colors(IMG)
+pprint(cv3.bic(IMG_QUANT, 32))
 
-# converte a img para negativo
-print("negativo" + ":", cv3.save_img(PATH_DATA, "negativo.jpg", cv3.negative(IMG)))
