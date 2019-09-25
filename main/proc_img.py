@@ -14,6 +14,7 @@ from random import randint
 from math import sqrt, pow
 from sklearn.cluster import KMeans
 from sklearn.utils import shuffle
+import numba as nb
 
 # remove os warnings eventuais
 warnings.simplefilter("ignore")
@@ -40,6 +41,8 @@ def save_img(path, name_arq, matrix):
         path: local onde será salvo
         name_arq: nome do arquivo
         matrix: obj da img
+
+        gray: true
     """
     path = os.path.join(path, name_arq)
     return cv2.imwrite(path, matrix)
@@ -52,11 +55,13 @@ def status_img(matrix):
         retorna o numero de linhas, colunas e canais da img
 
         retorno (nrows, ncols, channels) se imagem colorida
-        retorno (nrows, ncols) se imagem em escala de cinza
+        retorno (nrows, ncols, 1) se imagem em escala de cinza
+
+        gray: true
     """
-    try:
+    if len(matrix.shape) > 2:
         return (matrix.shape[0], matrix.shape[1], matrix.shape[2])
-    except:
+    else:
         return (matrix.shape[0], matrix.shape[1], 1)
 
 
@@ -90,15 +95,17 @@ def generate_histogram(
     return plt.close()
 
 
+@nb.jit
 def brightness(matrix, coefficient):
     """
         Recebe o obj da imagem e um coeficiente
 
         Aplica uma soma dos pixels da imagem com o coeficiente
         para aumentar o brilho
+
+        gray: true
     """
-    nrows = matrix.shape[0]
-    ncols = matrix.shape[1]
+    nrows, ncols, channels = status_img(matrix)
 
     # copia a matriz
     matrix = matrix.copy()
@@ -107,7 +114,7 @@ def brightness(matrix, coefficient):
         for j in range(ncols):
 
             # para os canais RGB
-            for channel in range(0, 3):
+            for channel in range(channels):
                 sum_ = coefficient + matrix[i][j][channel]
                 if sum_ >= 255:
                     matrix[i][j][channel] = 255
@@ -119,13 +126,14 @@ def brightness(matrix, coefficient):
     return matrix
 
 
+@nb.jit
 def negative(matrix):
     """
         Recebe o obj de imagem e transforma a imagem em negativo
+
+        gray: true
     """
-    nrows = matrix.shape[0]
-    ncols = matrix.shape[1]
-    channels = matrix.shape[2]
+    nrows, ncols, channels = status_img(matrix)
 
     matrix = matrix.copy()
 
@@ -138,7 +146,6 @@ def negative(matrix):
 
 
 def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
-
     """
         Recebe 3 vetores:
             hist_blue,
@@ -178,6 +185,7 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
     return True
 
 
+@nb.jit
 def histogram_global(matrix):
     """
         Calcula o histograma global da imagem e retorna 3 vetores
@@ -186,6 +194,8 @@ def histogram_global(matrix):
 
         retorna (hist_blue, hist_green, hist_red) para img com 3 bandas
         retorna (hist_blue) para img com 1 banda
+
+        gray: true
     """
     nrows, ncols, channels = status_img(matrix)
 
@@ -260,12 +270,13 @@ def save_vector(path, *vectors, prefix="", name=""):
         arq.write(str(vector_concat))
 
 
+# sem paralelização é melhor
 def generate_position(max_lin, max_col):
     """
     dado dois numeros maximos, irá gerar dois outros numeros aleatorios entre esses dois maximos, ou seja
     ira gerar um pixel aleatorio dentro dos limites da imagem
-    :param max_lin: numero maxixmo de line
-    :param max_col: numero maximo de coluna
+    :param max_lin: numero maxixmo de linhas
+    :param max_col: numero maximo de colunas
     :return: retorna uma tupla contendo um numero de lin e um de coluna, tuple(lin, col)
     """
     # discontando 1 pq ele gera o limite superior
@@ -273,29 +284,39 @@ def generate_position(max_lin, max_col):
     return tuple(aux)
 
 
-def generate_noise(matrixInit, percent, noise):
+# sem paralelização é melhor
+def generate_noise(matrixInit, percent=10, noise="salt"):
     """
-    dada uma imagem, irá inserir ruido nela (em apenas uma banda), aleatóriamente, obedecendo uma porcentagem.
+    dada uma imagem, irá inserir ruido nela, aleatóriamente, obedecendo uma porcentagem.
+
     :param matrixInit: a imagem que se deseja adicionar ruido tipo sal
+
     :param percent: a porcentagem de ruido que se deseja aplicar na imagem (valor inteiro)
+
     :param noise: variavel que carrega o tipo de ruido, "salt" = branco, "pepper" = preto
+
     :return: a matrix referente a imagem, porém acrescido de ruido
+
+    gray: true
     """
     matrix = matrixInit.copy()
     if noise == "salt":
         noise = 255
     elif noise == "pepper":
         noise = 0
+    else:
+        raise Exception("Tipo de ruído incorreto -> " + noise)
 
     if type(percent) == int:
         percent = percent / 100
-    elif type(percent) == float:
+    elif type(percent) == float and percent <= 1:
         pass
+    else:
+        raise Exception("O número informado é um float maior que 1")
 
     lista_pixel = []
     nLins, nCols, canais = status_img(matrix)
     qntd_pixels = nLins * nCols
-    ch = 0
 
     dict_pixel = {}
     # gerando posições aleatorias até que o limitar percentual seja atingido
@@ -310,24 +331,28 @@ def generate_noise(matrixInit, percent, noise):
             lista_pixel.append(pixel)  # coloca na lista
 
     for pixel in lista_pixel:
-        matrix[pixel[0]][pixel[1]][ch] = noise
-        matrix[pixel[0]][pixel[1]][1] = noise
-        matrix[pixel[0]][pixel[1]][2] = noise
+        for canal in range(canais):
+            matrix[pixel[0]][pixel[1]][canal] = noise
 
     return matrix
 
 
+@nb.jit
 def filtro_media(matrixInit, iterations=1):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
+    
     :param matrixInit: imagem a qual deve ser aplicado o filtro
+    
     :param iterations: valor das k iterações
+
     :return: copia da imagem com o filtro aplicado
+
+    gray: true
     """
 
     matrix = matrixInit.copy()
     nLins, nCols, canais = status_img(matrix)
-    ch = 0
     janela = 3  # sempre 3x3
     # não percorremos a coluna 0, nem a ultima coluna
     # nao percorreremos a linha 0 nem a ultima linha
@@ -362,16 +387,21 @@ def filtro_media(matrixInit, iterations=1):
     return matrix
 
 
+@nb.jit
 def filtro_moda(matrixInit, iterations=1):
     """
     essa função aplica o filtro da moda na imagem dada como entrada
+    
     :param matrixInit: a matriz referente a imagem a ser processada
+    
     :param iterations: numero de iterações a ser aplicado na imagem
+
     :return: a matriz processada pela função
+
+    gray: true
     """
     matrix = matrixInit.copy()
     nLins, nCols, canais = status_img(matrix)
-    ch = 0
     janela = 3  # sempre 3x3
     # não percorremos a coluna 0, nem a ultima coluna
     # nao percorreremos a linha 0 nem a ultima linha
@@ -384,19 +414,15 @@ def filtro_moda(matrixInit, iterations=1):
             for j in range(1, nCols - 1):
                 for ch in range(canais):
                     pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    pixels[0] = matrixInit[i][j][ch]  # central
-                    pixels[1] = matrixInit[i - 1][j][ch]  # norte
-                    pixels[2] = matrixInit[i - 1][j + 1][ch]  # nordeste
-                    pixels[3] = matrixInit[i][j + 1][ch]  # leste
-                    pixels[4] = matrixInit[i + 1][j + 1][ch]  # sudeste
-                    pixels[5] = matrixInit[i + 1][j][ch]  # sul
-                    pixels[6] = matrixInit[i + 1][j - 1][ch]  # sudoeste
-                    pixels[7] = matrixInit[i][j - 1][ch]  # oeste
-                    pixels[8] = matrixInit[i - 1][j - 1][ch]  # noroeste
-
-                    """aux = pd.Series(pixels)
-                    moda = aux.mode().to_list()
-                    moda = moda[0]"""
+                    pixels[0] = matrix[i][j][ch]  # central
+                    pixels[1] = matrix[i - 1][j][ch]  # norte
+                    pixels[2] = matrix[i - 1][j + 1][ch]  # nordeste
+                    pixels[3] = matrix[i][j + 1][ch]  # leste
+                    pixels[4] = matrix[i + 1][j + 1][ch]  # sudeste
+                    pixels[5] = matrix[i + 1][j][ch]  # sul
+                    pixels[6] = matrix[i + 1][j - 1][ch]  # sudoeste
+                    pixels[7] = matrix[i][j - 1][ch]  # oeste
+                    pixels[8] = matrix[i - 1][j - 1][ch]  # noroeste
 
                     a = np.array(pixels)
                     counts = np.bincount(a)
@@ -406,16 +432,21 @@ def filtro_moda(matrixInit, iterations=1):
     return matrix
 
 
+@nb.jit
 def filtro_mediana(matrixInit, iterations=1):
     """
     essa função aplica o filtro da mediana na imagem dada como entrada
+
     :param matrixInit: a matriz referente a imagem a ser processada
+
     :param iterations: o numero de iterações que o filtro deve ser aplicado
+
     :return: a matriz processada pela função
+
+    gray: true
     """
     matrix = matrixInit.copy()
     nLins, nCols, canais = status_img(matrix)
-    ch = 0
     janela = 3  # sempre 3x3
     # não percorremos a coluna 0, nem a ultima coluna
     # nao percorreremos a linha 0 nem a ultima linha
@@ -437,16 +468,18 @@ def filtro_mediana(matrixInit, iterations=1):
                     pixels[7] = matrix[i][j - 1][ch]  # oeste
                     pixels[8] = matrix[i - 1][j - 1][ch]  # noroeste
 
-                    mediana = int(np.median(pixels))
-                    matrix[i][j][ch] = mediana
+                    mediana = np.median(pixels)
+                    matrix[i][j][ch] = int(mediana)
     return matrix
 
 
+@nb.jit
 def hist_to_img(matrix, hist):
     """
         Coloca os valores do histograma na imagem
         
         matrix: matriz em escala de cinza
+
         hist: histograma com os valores
     """
 
@@ -749,8 +782,9 @@ def linear_enhancement(matrix, a, b):
 
     return matrix
 
-def fatiamento(matrizInit, nv0 = 0, nv1 = 190, limiar = 120):
-    '''
+
+def fatiamento(matrizInit, nv0=0, nv1=190, limiar=120):
+    """
     Essa função realiza o fatiamento do histograma, de forma que se o valor de um pixel for inferior ao limiar ele será
     setado para o valor de nivel 0, caso o valor seja igual ou maior ao limiar ele será setado para o nivel 1
     :param matrizInit: imagem de entrada para o filtro, deve ser uma imagem em tom de cinza
@@ -758,11 +792,13 @@ def fatiamento(matrizInit, nv0 = 0, nv1 = 190, limiar = 120):
     :param nv1: é o nivel (cor) que deve ser ajustado caso o pixel atinja o limiar
     :param limiar: é o valor de corte que deve ser obedecido
     :return: imagem em escala de cinza com os valores ajustados
-    '''
+    """
 
     nrows, ncols, channels = status_img(matrizInit)
-    if channels > 2:
-        raise NotImplementedError("A função só está implementada para imagens em tons de cinza!")
+    if channels > 1:
+        raise NotImplementedError(
+            "A função só está implementada para imagens em tons de cinza!"
+        )
     matriz = matrizInit.copy()
 
     for i in range(nrows):
