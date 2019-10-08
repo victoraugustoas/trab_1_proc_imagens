@@ -132,9 +132,6 @@ imagens/*.gif
 # videos
 videos/
 
-# .zip
-*.zip
-
 # data folder
 main/data/*
 
