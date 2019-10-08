@@ -67,4 +67,3 @@ cv3.save_img(PATH_DATA, "sobel.jpg", cv3.filtro_sobel(IMG_QUANT))
 print("bic")
 IMG_QUANT = cv3.quantization_colors(IMG)
 pprint(cv3.bic(IMG_QUANT, 32))
-

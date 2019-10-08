@@ -129,6 +129,9 @@ imagens/*.jpg
 imagens/*.png
 imagens/*.gif
 
+# videos
+videos/
+
 # .zip
 *.zip
 
