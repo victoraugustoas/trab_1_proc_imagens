@@ -817,6 +817,8 @@ def load_videos_janela(video_file, cut=25):
     :param video_file: arquivo de video que deve ser aberto, para que os frames sejam capturados
     :param cut: fator de corte para os frames, ou seja, quantidade de fps para criarmos a janela
     """
+    return False  # bugada
+    #extrair alguns frames e salvar, dps gerar o histograma deles
 
     # print "load_videos"
     capture = cv2.VideoCapture(video_file)
@@ -828,26 +830,24 @@ def load_videos_janela(video_file, cut=25):
     janela = 2 * cut + 1
     frames_janela = []
     ttl_janelas = 0
+    retorno = []
     while (read_flag):
         # print i
         if i <= janela:
             frames_janela.append(frame)
         else: # a janela já encheu
-            vid_frames = np.asarray(frames_janela, dtype='uint8')[:-1]
-            print(janela)
-            print(len(frames_janela))
-            # aqui deve ser operada a janela << criar as funções aqui
-            frames_janela = [frame] #nova lista de frames
+
+            frames_janela = [frame]  # nova lista de frames
             ttl_janelas += 1
             janela += 2 * cut + 1
-            print(janela)
-            print("****************")
+        vid_frames = np.asarray(frames_janela, dtype='uint8')[:-1]
         read_flag, frame = capture.read()
         i += 1
 
     capture.release()
     print("total de frames:", i)
     print("total de janelas:", ttl_janelas)
+    return retorno
 
 
 def load_video(video_file):
@@ -868,7 +868,7 @@ def load_video(video_file):
 
     while (read_flag):
         # print i
-        if i % 10 == 0:
+        if i % 25 == 0:
             vid_frames.append(frame)
             #                print frame.shape
         read_flag, frame = capture.read()
@@ -912,4 +912,26 @@ def play_video(video_file):
     cap.release()
     # Closes all the frames
     cv2.destroyAllWindows()
+
+def tester():
+    # esse é um trecho do meu tester, que eu tava usando para fazer a similaridade entres os frames
+    # play_video("../videos/bf42.mp4")
+    '''frames = vito.load_video("../videos/bf42.mp4")
+    i = 0
+    for f in frames[:25]:
+        vito.save_img("../imagens/frames", "frames" + str(i) + ".png", f)
+        #cv2.imshow("f1", f)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+        i+= 1
+    quit()'''
+
+    image1 = cv2.imread("../imagens/frames/frames0.png")
+    image2 = cv2.imread("../imagens/frames/frames5.png")
+
+    hist1 = cv2.calcHist([image1], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
+    hist1 = cv2.normalize(hist1, hist1).flatten()
+
+    hist2 = cv2.calcHist([image2], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
+    hist2 = cv2.normalize(hist2, hist2).flatten()
 
