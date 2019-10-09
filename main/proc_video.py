@@ -259,7 +259,7 @@ def tester():
 def detecta_corte(lista_frames, limiar):
     """
     Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
-    :param lista_frames: tupla contendo os ids dos frames e o frame em si
+    :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
     :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
     :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
             as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
@@ -275,3 +275,42 @@ def detecta_corte(lista_frames, limiar):
             lista_cortes.append((str(fa["frame_id"]) + " |-> " + str(frame["frame_id"]), val))
         fa = frame
     return lista_cortes
+
+
+def detecta_corte_grid(lista_frames, limiar, nparts):
+    """
+    :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
+    :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
+    :param nparts: numero de partições do grid
+    :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
+            as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
+    """
+    lista_cortes = []
+    fa = lista_frames[0]  # frameA
+    #tirando o histograma local nas 3 bandas das partições
+    tiles_fa = (cv3.histogram_local(fa["frame"], nparts))
+    print(len(tiles_fa), len(tiles_fa[0]), len(tiles_fa[0][0]))
+
+
+    for frame in lista_frames[1:]:
+        #tirando o histograma local nas 3 bandas do frame b
+        tiles_frame = (cv3.histogram_local(frame["frame"], nparts))
+
+        lista_a = []
+        lista_b = []
+        #percorrendo todos os grids
+        for i in range(0, nparts*nparts):
+            for j in range(0, 3):
+                for k in range(0, 256):
+                    lista_a.append(tiles_fa[i][j][k])
+                    lista_b.append(tiles_frame[i][j][k])
+            array_a = np.array(lista_a)
+            array_b = np.array(lista_b)
+            print(i, np.linalg.norm(array_a - array_b))
+            lista_a = []
+            lista_b = []
+
+        #todo codar comparação entre os tiles com uma mask
+        #todo mask personalizavel ?
+        #todo codar retorno formato vito
+    return True
