@@ -3,7 +3,7 @@ import numba as nb
 import numpy as np
 import datetime as dt
 
-import proc_img as cv3
+import trab_1_proc_imagens.main.proc_img as cv3
 
 
 def open_video(path):
@@ -25,7 +25,7 @@ def display_video(video, percent=50, dim=None):
 
     # ocorreu um erro ao abrir o arquivo
     if not video.isOpened():
-        raise "Video não pode ser aberto"
+        raise Exception("Video não pode ser aberto")
 
     print("Pressione Q para sair da exibição")
     while video.isOpened():
@@ -169,12 +169,12 @@ def load_video(video_file):
 def get_frames(video, fps):
     """
         função para extrair os frames de um video, nessa função especificamente serão retornado os frames em um intervalo,
-        ou seja, a cada 10 frames 1 será retornado.
+        ou seja, a cada fps frames 1 será retornado.
         
-        :param video_file: video que deve ser aberto para que seja extraido seus frames
-        
+        :param video: video que deve ser aberto para que seja extraido seus frames
+        :param fps: a taxa de quadros do video, para que possa ser implementada a janela deslizante
         :return: uma tupla com uma lista contendo os frames, eles já estão prontos para serem exibidos
-        e uma lista com os ids dos frames
+        e uma lista com os ids dos frames [(frame_id, frame), ..] (((RETORNA UMA LISTA DE DICTS)))
     """
 
     read_flag, frame = video.read()
@@ -255,3 +255,19 @@ def tester():
 
     print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
 
+
+def detecta_corte(lista_frames, limiar):
+    """
+    Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
+    :param lista_frames: tupla contendo os ids dos frames e o frame em si
+    :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
+    :return:
+    """
+
+    fA = lista_frames[0] #frameA
+    for frame in lista_frames[1:]:
+        print(fA["frame_id"], "-->", frame["frame_id"])
+        val = similarity(fA["frame"], frame["frame"])
+        return val
+
+    return True
