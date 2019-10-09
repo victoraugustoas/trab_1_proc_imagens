@@ -130,10 +130,12 @@ imagens/*.png
 imagens/*.gif
 
 # videos
-videos/
+videos/*
+!videos/.gitkeep
 
 # data folder
 main/data/*
+!main/data/.gitkeep
 
 # tester
 main/tester.py

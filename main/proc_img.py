@@ -811,136 +811,20 @@ def fatiamento(matrizInit, nv0=0, nv1=190, limiar=120):
     return matriz
 
 
-def load_videos_janela(video_file, cut=25):
+def resize_img(matrix, percent=50, dim=None):
     """
-    essa função abre o video e retorna os frames multiplos de 10
-    :param video_file: arquivo de video que deve ser aberto, para que os frames sejam capturados
-    :param cut: fator de corte para os frames, ou seja, quantidade de fps para criarmos a janela
+        Redimensiona a imagem de acordo com a porcentagem
+
+        percent: valor inteiro entre 0 e 100
+        dim: tupla com valores inteiros de largura e altura respectivamente
     """
-    #extrair alguns frames e salvar, dps gerar o histograma deles
+    # copia a matrix para não reescreve-la
+    matrix = matrix.copy()
 
-    # print "load_videos"
-    capture = cv2.VideoCapture(video_file)
-
-    read_flag, frame = capture.read()
-    vid_frames = []
-    i = 1
-    # print read_flag
-    janela = 2 * cut + 1
-    frames_janela = []
-
-    #ttl_janelas = 0
-    #retorno = []
-
-    while (read_flag):
-        # print i
-        if i <= janela:
-            frames_janela.append(frame)
-        else:
-            #a janela fechou
-            #print(janela)
-            #print(int(len(frames_janela)/2))
-            vid_frames.append(frames_janela[int(len(frames_janela)/2)]) #pegando apenas o frame do meio da janela
-
-            frames_janela = [frame] # limpando a janela e colocado o frame atual nela
-            janela += 2 * cut + 1
-            #print frame.shape
-        read_flag, frame = capture.read()
-        i += 1
-    vid_frames = np.asarray(vid_frames, dtype='uint8')[:-1]
-    capture.release()
-    print("total de frames:", i)
-    print("total de frames selecionados", len(vid_frames))
-    return vid_frames
-
-
-
-
-def load_video(video_file):
-    """
-    função para extrair os frames de um video, nessa função especificamente serão retornado os frames em um intervalo
-    de 10, ou seja, a cada 10 frames 1 será retornado.
-    Isso é importante pois não foi possível retornar todos os frames, ele crasha
-    :param video_file: video que deve ser aberto para que seja extraido seus frames
-    :return: um lista contendo os frames, eles já estão prontos para serem exibidos
-    """
-    # print "load_videos"
-    capture = cv2.VideoCapture(video_file)
-
-    read_flag, frame = capture.read()
-    vid_frames = []
-    i = 1
-    # print read_flag
-
-    while (read_flag):
-        # print i
-        if i % 25 == 0:
-            vid_frames.append(frame)
-            #                print frame.shape
-        read_flag, frame = capture.read()
-        i += 1
-    vid_frames = np.asarray(vid_frames, dtype='uint8')[:-1]
-    # print 'vid shape'
-    # print vid_frames.shape
-    capture.release()
-    print(i)
-    return vid_frames
-
-
-def play_video(video_file):
-    """
-    Função para exibir o video, ela cria diversas janelas, 1 para cada frame e a fecha em seguida, dando a impressão
-    de um player fixo
-    :param video_file: video a ser tocado no  "player"
-    """
-    cap = cv2.VideoCapture(video_file)
-
-    # Check if camera opened successfully
-    if (cap.isOpened() == False):
-        print("Error opening video stream or file")
-    # Read until video is completed
-    while (cap.isOpened()):
-        # Capture frame-by-frame
-        ret, frame = cap.read()
-        if ret == True:
-
-            # Display the resulting frame
-            cv2.imshow('Frame', frame)
-
-            # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
-
-        # Break the loop
-        else:
-            break
-    # When everything done, release the video capture object
-    cap.release()
-    # Closes all the frames
-    cv2.destroyAllWindows()
-
-def tester():
-    # esse é um trecho do meu tester, que eu tava usando para fazer a similaridade entres os frames
-    # play_video("../videos/bf42.mp4")
-    #extraido de : https://www.pyimagesearch.com/2014/07/14/3-ways-compare-histograms-using-opencv-python/
-    #link da documentação: https://docs.opencv.org/2.4/modules/imgproc/doc/histograms.html?highlight=calchist
-    '''frames = vito.load_video("../videos/bf42.mp4")
-    i = 0
-    for f in frames[:25]:
-        vito.save_img("../imagens/frames", "frames" + str(i) + ".png", f)
-        #cv2.imshow("f1", f)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
-        i+= 1
-    quit()'''
-
-    image1 = cv2.imread("../imagens/frames/frames0.png")
-    image2 = cv2.imread("../imagens/frames/frames5.png")
-
-    hist1 = cv2.calcHist([image1], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
-    hist1 = cv2.normalize(hist1, hist1).flatten()
-
-    hist2 = cv2.calcHist([image2], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256])
-    hist2 = cv2.normalize(hist2, hist2).flatten()
-
-    print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
+    nrows, ncols, channels = status_img(matrix)
+    if not dim:
+        width = int(ncols * percent / 100)
+        height = int(nrows * percent / 100)
+        return cv2.resize(matrix, (width, height))
+    else:
+        return cv2.resize(matrix, dim)
