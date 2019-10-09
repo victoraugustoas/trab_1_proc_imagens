@@ -261,13 +261,17 @@ def detecta_corte(lista_frames, limiar):
     Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
     :param lista_frames: tupla contendo os ids dos frames e o frame em si
     :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
-    :return:
+    :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
+            as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
     """
-
-    fA = lista_frames[0] #frameA
+    lista_cortes = []
+    fa = lista_frames[0] #frameA
     for frame in lista_frames[1:]:
-        print(fA["frame_id"], "-->", frame["frame_id"])
-        val = similarity(fA["frame"], frame["frame"])
-        return val
+        # print(fA["frame_id"], "-->", frame["frame_id"])
+        val = similarity(fa["frame"], frame["frame"])
 
-    return True
+        #passou do limiar, corte detectado
+        if val > limiar:
+            lista_cortes.append((str(fa["frame_id"]) + " |-> " + str(frame["frame_id"]), val))
+        fa = frame
+    return lista_cortes
