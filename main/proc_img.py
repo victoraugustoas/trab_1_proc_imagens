@@ -917,6 +917,7 @@ def tester():
     # esse é um trecho do meu tester, que eu tava usando para fazer a similaridade entres os frames
     # play_video("../videos/bf42.mp4")
     #extraido de : https://www.pyimagesearch.com/2014/07/14/3-ways-compare-histograms-using-opencv-python/
+    #link da documentação: https://docs.opencv.org/2.4/modules/imgproc/doc/histograms.html?highlight=calchist
     '''frames = vito.load_video("../videos/bf42.mp4")
     i = 0
     for f in frames[:25]:
