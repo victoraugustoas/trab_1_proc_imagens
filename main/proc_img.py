@@ -817,7 +817,6 @@ def load_videos_janela(video_file, cut=25):
     :param video_file: arquivo de video que deve ser aberto, para que os frames sejam capturados
     :param cut: fator de corte para os frames, ou seja, quantidade de fps para criarmos a janela
     """
-    return False  # bugada
     #extrair alguns frames e salvar, dps gerar o histograma deles
 
     # print "load_videos"
@@ -829,25 +828,32 @@ def load_videos_janela(video_file, cut=25):
     # print read_flag
     janela = 2 * cut + 1
     frames_janela = []
-    ttl_janelas = 0
-    retorno = []
+
+    #ttl_janelas = 0
+    #retorno = []
+
     while (read_flag):
         # print i
         if i <= janela:
             frames_janela.append(frame)
-        else: # a janela já encheu
+        else:
+            #a janela fechou
+            #print(janela)
+            #print(int(len(frames_janela)/2))
+            vid_frames.append(frames_janela[int(len(frames_janela)/2)]) #pegando apenas o frame do meio da janela
 
-            frames_janela = [frame]  # nova lista de frames
-            ttl_janelas += 1
+            frames_janela = [frame] # limpando a janela e colocado o frame atual nela
             janela += 2 * cut + 1
-        vid_frames = np.asarray(frames_janela, dtype='uint8')[:-1]
+            #print frame.shape
         read_flag, frame = capture.read()
         i += 1
-
+    vid_frames = np.asarray(vid_frames, dtype='uint8')[:-1]
     capture.release()
     print("total de frames:", i)
-    print("total de janelas:", ttl_janelas)
-    return retorno
+    print("total de frames selecionados", len(vid_frames))
+    return vid_frames
+
+
 
 
 def load_video(video_file):
