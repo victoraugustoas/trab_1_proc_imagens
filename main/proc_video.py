@@ -72,6 +72,23 @@ def get_time_frame(video, frame_id):
     return str(dt.timedelta(milliseconds=ms))
 
 
+def get_frame(video, frame_id):
+    """
+        Dado um id do frame, retorna o frame correspondente
+    """
+    # salva o frame atual
+    frame_atual = video.get(cv2.CAP_PROP_POS_FRAMES)
+
+    # muda para o frame correspondente
+    video.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
+    read_flag, frame = video.read()
+
+    # retorna o frame atual
+    video.set(cv2.CAP_PROP_POS_FRAMES, frame_atual)
+
+    return frame
+
+
 def load_videos_janela(video_file, cut=25):
     """
     essa função abre o video e retorna os frames multiplos de 10
@@ -162,22 +179,19 @@ def get_frames(video, fps):
 
     read_flag, frame = video.read()
     vid_frames = []
-    frame_id = []
     i = 1
 
     fps = int(fps)
 
     while read_flag:
-        # print i
         if i % fps == 0:
-            vid_frames.append(frame)
-            frame_id.append(i - 1)
+            info = {"frame_id": i - 1, "frame": frame}
+            vid_frames.append(info)
 
         read_flag, frame = video.read()
         i += 1
-    vid_frames = np.asarray(vid_frames, dtype="uint8")[:-1]
 
-    return (vid_frames, frame_id)
+    return vid_frames
 
 
 @nb.jit
