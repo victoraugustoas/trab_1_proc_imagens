@@ -3,7 +3,7 @@ import numba as nb
 import numpy as np
 import datetime as dt
 
-import trab_1_proc_imagens.main.proc_img as cv3
+import proc_img as cv3
 
 
 def open_video(path):
@@ -220,9 +220,13 @@ def similarity(frame_a, frame_b):
     array_a = np.array(lst_a)
     array_b = np.array(lst_b)
 
-    dist = np.linalg.norm(array_a - array_b)
+    produto_interno = np.inner(array_a, array_b)
+    norm_a = np.linalg.norm(array_a)
+    norm_b = np.linalg.norm(array_b)
 
-    return dist
+    cos = produto_interno / (norm_a * norm_b)
+
+    return cos
 
 
 def tester():
@@ -256,7 +260,7 @@ def tester():
     print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
 
 
-def detecta_corte(lista_frames, limiar):
+def detecta_corte(lista_frames, limiar=0.01):
     """
     Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
     :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
@@ -265,14 +269,20 @@ def detecta_corte(lista_frames, limiar):
             as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
     """
     lista_cortes = []
-    fa = lista_frames[0] #frameA
+    fa = lista_frames[0]  # frameA
     for frame in lista_frames[1:]:
         # print(fA["frame_id"], "-->", frame["frame_id"])
         val = similarity(fa["frame"], frame["frame"])
 
-        #passou do limiar, corte detectado
+        # passou do limiar, corte detectado
         if val > limiar:
-            lista_cortes.append((str(fa["frame_id"]) + " |-> " + str(frame["frame_id"]), val))
+            lista_cortes.append(
+                {
+                    "frame_id_A": fa["frame_id"],
+                    "frame_id_B": frame["frame_id"],
+                    "similarity": val,
+                }
+            )
         fa = frame
     return lista_cortes
 
