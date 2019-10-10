@@ -3,8 +3,8 @@ import numba as nb
 import numpy as np
 import datetime as dt
 
-import proc_img as cv3
-
+#import proc_img as cv3
+import trab_1_proc_imagens.main.proc_img as cv3
 
 def open_video(path):
     """
@@ -287,40 +287,71 @@ def detecta_corte(lista_frames, limiar=0.01):
     return lista_cortes
 
 
-def detecta_corte_grid(lista_frames, limiar, nparts):
+def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
     """
+    função para detectar corte entre os frames de uma lista, porém analisaremos os grids da imagem, ou seja, compararemos
+        a similaridade por meio do quão parecidos são os grids
     :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
     :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
     :param nparts: numero de partições do grid
+    :param mask: vetor contendo os pesos que devem ser dados as posições do grid
     :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
             as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
     """
     lista_cortes = []
+
+
+    #checando a integridade da mascara
+    if len(mask) is 0:
+        mask = []
+        for i in range(nparts*nparts):
+            mask.append(1)
+    elif len(mask) < nparts * nparts:
+        raise Exception ("tamanho da mascara não compreende o tamanho de tiles do grid")
+
+    # tirando o 1º frame na mão
     fa = lista_frames[0]  # frameA
     #tirando o histograma local nas 3 bandas das partições
     tiles_fa = (cv3.histogram_local(fa["frame"], nparts))
-    print(len(tiles_fa), len(tiles_fa[0]), len(tiles_fa[0][0]))
 
-
+    #iterando sobre os outros frames
     for frame in lista_frames[1:]:
         #tirando o histograma local nas 3 bandas do frame b
         tiles_frame = (cv3.histogram_local(frame["frame"], nparts))
 
         lista_a = []
         lista_b = []
+        tiles_simi = []
         #percorrendo todos os grids
         for i in range(0, nparts*nparts):
             for j in range(0, 3):
                 for k in range(0, 256):
                     lista_a.append(tiles_fa[i][j][k])
                     lista_b.append(tiles_frame[i][j][k])
+            #tirando a similaridade entre os tiles do grid
             array_a = np.array(lista_a)
             array_b = np.array(lista_b)
-            print(i, np.linalg.norm(array_a - array_b))
-            lista_a = []
-            lista_b = []
+            produto_interno = np.inner(array_a, array_b)
+            norm_a = np.linalg.norm(array_a)
+            norm_b = np.linalg.norm(array_b)
+            cos = produto_interno / (norm_a * norm_b)
+            tiles_simi.append(cos) #criando um vetor com as similaridades entre os tiles
 
-        #todo codar comparação entre os tiles com uma mask
-        #todo mask personalizavel ?
-        #todo codar retorno formato vito
-    return True
+        # vetor contendo a similaridade entre os tiles já multiplicados os pesos
+        similaridades = np.multiply(tiles_simi, mask)
+        soma_valores = np.sum(similaridades)
+        soma_pesos = np.sum(mask)
+
+        # todo arrumar uma mas boa
+        media = soma_valores/soma_pesos
+
+        if media > limiar: # corte
+            lista_cortes.append({'frame_id_A': fa['frame_id'],
+                                    'frame_id_B': frame['frame_id'],
+                                    'similarity': media,
+                                    'time': get_time_frame(video, frame['frame_id'])})
+
+        # resetando para a proxima iteraçao
+        fa = frame
+        tiles_fa = tiles_frame
+    return lista_cortes
