@@ -4,9 +4,14 @@ import numpy as np
 from datetime import datetime as dt
 from datetime import timedelta
 from pprint import pprint
+import platform
 
-# import proc_img as cv3
-import trab_1_proc_imagens.main.proc_img as cv3
+# verifica qual sistema operacional está rodando
+try:
+    if platform.linux_distribution():
+        import proc_img as cv3
+except:
+    import trab_1_proc_imagens.main.proc_img as cv3
 
 
 def open_video(path):
