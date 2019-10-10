@@ -1,10 +1,13 @@
 import cv2
 import numba as nb
 import numpy as np
-import datetime as dt
+from datetime import datetime as dt
+from datetime import timedelta
+from pprint import pprint
 
-#import proc_img as cv3
+# import proc_img as cv3
 import trab_1_proc_imagens.main.proc_img as cv3
+
 
 def open_video(path):
     """
@@ -69,7 +72,7 @@ def get_time_frame(video, frame_id):
     video.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
     ms = video.get(cv2.CAP_PROP_POS_MSEC)
 
-    return str(dt.timedelta(milliseconds=ms))
+    return str(timedelta(milliseconds=ms))
 
 
 def get_frame(video, frame_id):
@@ -201,6 +204,9 @@ def similarity(frame_a, frame_b):
         Calcula a similaridade entre dois frames utilizando a distancia euclidiana
 
         retorna a distancia
+
+        referencia:
+        https://mundoeducacao.bol.uol.com.br/matematica/angulo-entre-dois-vetores.htm
     """
 
     hist_a = cv3.histogram_global(frame_a)
@@ -227,6 +233,42 @@ def similarity(frame_a, frame_b):
     cos = produto_interno / (norm_a * norm_b)
 
     return cos
+
+
+def compare_times(video, csv_dict, lst_frames):
+    """
+        Compara os tempos da lista de frames de corte com o csv da planilha
+
+        retorna a acurácia
+    """
+
+    def compare(ele, min_value, max_value):
+        time = ele["time"].split(".")[0]
+        time = dt.strptime(time, "%H:%M:%S")
+        if (
+            (time.second + 1) == max_value["second"]
+            and time.minute == max_value["minute"]
+        ) or (
+            (time.second - 1) == min_value["second"]
+            and time.minute == min_value["minute"]
+        ):
+            return True
+        else:
+            return False
+
+    corrects = 0
+
+    for obs in csv_dict:
+        time = obs["timestamp"]
+        time = dt.strptime(time, "%H:%M:%S")
+        min_value = {"second": time.minute - 1, "minute": time.hour}
+        max_value = {"second": time.minute + 1, "minute": time.hour}
+
+        values = list(filter(lambda x: compare(x, min_value, max_value), lst_frames))
+        corrects += len(values)
+
+    accuracy = corrects / len(csv_dict)
+    return accuracy
 
 
 def tester():
@@ -260,7 +302,7 @@ def tester():
     print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
 
 
-def detecta_corte(lista_frames, limiar=0.01):
+def detecta_corte(video, lista_frames, limiar=0.01):
     """
     Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
     :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
@@ -280,6 +322,7 @@ def detecta_corte(lista_frames, limiar=0.01):
                 {
                     "frame_id_A": fa["frame_id"],
                     "frame_id_B": frame["frame_id"],
+                    "time": get_time_frame(video, frame["frame_id"]),
                     "similarity": val,
                 }
             )
@@ -300,42 +343,43 @@ def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
     """
     lista_cortes = []
 
-
-    #checando a integridade da mascara
+    # checando a integridade da mascara
     if len(mask) is 0:
         mask = []
-        for i in range(nparts*nparts):
+        for i in range(nparts * nparts):
             mask.append(1)
     elif len(mask) < nparts * nparts:
-        raise Exception ("tamanho da mascara não compreende o tamanho de tiles do grid")
+        raise Exception("tamanho da mascara não compreende o tamanho de tiles do grid")
 
     # tirando o 1º frame na mão
     fa = lista_frames[0]  # frameA
-    #tirando o histograma local nas 3 bandas das partições
-    tiles_fa = (cv3.histogram_local(fa["frame"], nparts))
+    # tirando o histograma local nas 3 bandas das partições
+    tiles_fa = cv3.histogram_local(fa["frame"], nparts)
 
-    #iterando sobre os outros frames
+    # iterando sobre os outros frames
     for frame in lista_frames[1:]:
-        #tirando o histograma local nas 3 bandas do frame b
-        tiles_frame = (cv3.histogram_local(frame["frame"], nparts))
+        # tirando o histograma local nas 3 bandas do frame b
+        tiles_frame = cv3.histogram_local(frame["frame"], nparts)
 
         lista_a = []
         lista_b = []
         tiles_simi = []
-        #percorrendo todos os grids
-        for i in range(0, nparts*nparts):
+        # percorrendo todos os grids
+        for i in range(0, nparts * nparts):
             for j in range(0, 3):
                 for k in range(0, 256):
                     lista_a.append(tiles_fa[i][j][k])
                     lista_b.append(tiles_frame[i][j][k])
-            #tirando a similaridade entre os tiles do grid
+            # tirando a similaridade entre os tiles do grid
             array_a = np.array(lista_a)
             array_b = np.array(lista_b)
             produto_interno = np.inner(array_a, array_b)
             norm_a = np.linalg.norm(array_a)
             norm_b = np.linalg.norm(array_b)
             cos = produto_interno / (norm_a * norm_b)
-            tiles_simi.append(cos) #criando um vetor com as similaridades entre os tiles
+            tiles_simi.append(
+                cos
+            )  # criando um vetor com as similaridades entre os tiles
 
         # vetor contendo a similaridade entre os tiles já multiplicados os pesos
         similaridades = np.multiply(tiles_simi, mask)
@@ -343,13 +387,17 @@ def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
         soma_pesos = np.sum(mask)
 
         # todo arrumar uma mas boa
-        media = soma_valores/soma_pesos
+        media = soma_valores / soma_pesos
 
-        if media > limiar: # corte
-            lista_cortes.append({'frame_id_A': fa['frame_id'],
-                                    'frame_id_B': frame['frame_id'],
-                                    'similarity': media,
-                                    'time': get_time_frame(video, frame['frame_id'])})
+        if media > limiar:  # corte
+            lista_cortes.append(
+                {
+                    "frame_id_A": fa["frame_id"],
+                    "frame_id_B": frame["frame_id"],
+                    "similarity": media,
+                    "time": get_time_frame(video, frame["frame_id"]),
+                }
+            )
 
         # resetando para a proxima iteraçao
         fa = frame
