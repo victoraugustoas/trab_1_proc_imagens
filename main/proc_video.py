@@ -1,10 +1,11 @@
-import cv2
-import numba as nb
-import numpy as np
+import platform
 from datetime import datetime as dt
 from datetime import timedelta
 from pprint import pprint
-import platform
+
+import cv2
+import numba as nb
+import numpy as np
 
 # verifica qual sistema operacional está rodando
 try:
@@ -203,12 +204,27 @@ def get_frames(video, fps):
 
 
 @nb.jit
-def similarity(frame_a, frame_b):
-
+def cos_vectors(arr_a, arr_b):
     """
-        Calcula a similaridade entre dois frames utilizando a distancia euclidiana
+        Calcula o cosseno do angulo de dois vetores
 
-        retorna a distancia
+        retorna o cosseno do angulo, valor entre 0 e 1
+    """
+    produto_interno = np.inner(arr_a, arr_b)
+    norm_a = np.linalg.norm(arr_a)
+    norm_b = np.linalg.norm(arr_b)
+
+    cos = produto_interno / (norm_a * norm_b)
+
+    return cos
+
+
+@nb.jit
+def similarity_hist_global(frame_a, frame_b):
+    """
+        Calcula a similaridade entre dois frames utilizando o histograma global e o cosseno do angulo de dois vetores
+
+        retorna a similaridade
 
         referencia:
         https://mundoeducacao.bol.uol.com.br/matematica/angulo-entre-dois-vetores.htm
@@ -231,13 +247,7 @@ def similarity(frame_a, frame_b):
     array_a = np.array(lst_a)
     array_b = np.array(lst_b)
 
-    produto_interno = np.inner(array_a, array_b)
-    norm_a = np.linalg.norm(array_a)
-    norm_b = np.linalg.norm(array_b)
-
-    cos = produto_interno / (norm_a * norm_b)
-
-    return cos
+    return cos_vectors(array_a, array_b)
 
 
 def compare_times(video, csv_dict, lst_frames):
@@ -319,7 +329,7 @@ def detecta_corte(video, lista_frames, limiar=0.01):
     fa = lista_frames[0]  # frameA
     for frame in lista_frames[1:]:
         # print(fA["frame_id"], "-->", frame["frame_id"])
-        val = similarity(fa["frame"], frame["frame"])
+        val = similarity_hist_global(fa["frame"], frame["frame"])
 
         # passou do limiar, corte detectado
         if val > limiar:
@@ -370,18 +380,15 @@ def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
         lista_b = []
         tiles_simi = []
         # percorrendo todos os grids
-        for i in range(0, nparts * nparts):
-            for j in range(0, 3):
-                for k in range(0, 256):
-                    lista_a.append(tiles_fa[i][j][k])
-                    lista_b.append(tiles_frame[i][j][k])
+        for tile in range(0, nparts * nparts):
+            for channel in range(0, 3):
+                for color in range(0, 256):
+                    lista_a.append(tiles_fa[tile][channel][color])
+                    lista_b.append(tiles_frame[tile][channel][color])
             # tirando a similaridade entre os tiles do grid
             array_a = np.array(lista_a)
             array_b = np.array(lista_b)
-            produto_interno = np.inner(array_a, array_b)
-            norm_a = np.linalg.norm(array_a)
-            norm_b = np.linalg.norm(array_b)
-            cos = produto_interno / (norm_a * norm_b)
+            cos = cos_vectors(array_a, array_b)
             tiles_simi.append(
                 cos
             )  # criando um vetor com as similaridades entre os tiles
