@@ -250,6 +250,21 @@ def similarity_hist_global(frame_a, frame_b):
     return cos_vectors(array_a, array_b)
 
 
+def similarity_bic(frame_a, frame_b):
+    bic_a = cv3.bic(cv3.quantization_colors(frame_a), 32)
+    bic_b = cv3.bic(cv3.quantization_colors(frame_a), 32)
+
+    # monta o vetor de caracteristicas do bic
+    array_a = bic_a["inner"] + bic_a["out"]
+    array_b = bic_b["inner"] + bic_b["out"]
+
+    array_a = np.array(array_a)
+    array_b = np.array(array_b)
+
+    cos = cos_vectors(array_a, array_b)
+    return cos
+
+
 def compare_times(video, csv_dict, lst_frames):
     """
         Compara os tempos da lista de frames de corte com o csv da planilha
