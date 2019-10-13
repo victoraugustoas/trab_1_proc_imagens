@@ -175,7 +175,7 @@ def load_video(video_file):
 
 
 @nb.jit
-def get_frames(video, fps):
+def get_frames(video, fps, resize={}):
     """
         função para extrair os frames de um video, nessa função especificamente serão retornado os frames em um intervalo,
         ou seja, a cada fps frames 1 será retornado.
@@ -194,7 +194,19 @@ def get_frames(video, fps):
 
     while read_flag:
         if i % fps == 0:
-            info = {"frame_id": i - 1, "frame": frame}
+            if resize.get("dim", None) != None:
+                info = {
+                    "frame_id": i - 1,
+                    "frame": cv3.resize_img(frame, dim=resize.get("dim")),
+                }
+            elif resize.get("percent", None) != None:
+                info = {
+                    "frame_id": i - 1,
+                    "frame": cv3.resize_img(frame, percent=resize.get("percent")),
+                }
+            else:
+                info = {"frame_id": i - 1, "frame": frame}
+
             vid_frames.append(info)
 
         read_flag, frame = video.read()
@@ -252,7 +264,11 @@ def similarity_hist_global(frame_a, frame_b):
 
 def similarity_bic(frame_a, frame_b):
     bic_a = cv3.bic(cv3.quantization_colors(frame_a), 32)
-    bic_b = cv3.bic(cv3.quantization_colors(frame_a), 32)
+    bic_b = cv3.bic(cv3.quantization_colors(frame_b), 32)
+
+    # caso a qtd de cores não seja igual
+    if len(bic_a.get("pallet")) != len(bic_b.get("pallet")):
+        return 0.0
 
     # monta o vetor de caracteristicas do bic
     array_a = bic_a["inner"] + bic_a["out"]
@@ -332,34 +348,6 @@ def tester():
     print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
 
 
-def detecta_corte(video, lista_frames, limiar=0.01):
-    """
-    Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
-    :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
-    :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
-    :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
-            as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
-    """
-    lista_cortes = []
-    fa = lista_frames[0]  # frameA
-    for frame in lista_frames[1:]:
-        # print(fA["frame_id"], "-->", frame["frame_id"])
-        val = similarity_hist_global(fa["frame"], frame["frame"])
-
-        # passou do limiar, corte detectado
-        if val > limiar:
-            lista_cortes.append(
-                {
-                    "frame_id_A": fa["frame_id"],
-                    "frame_id_B": frame["frame_id"],
-                    "time": get_time_frame(video, frame["frame_id"]),
-                    "similarity": val,
-                }
-            )
-        fa = frame
-    return lista_cortes
-
-
 def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
     """
     função para detectar corte entre os frames de uma lista, porém analisaremos os grids da imagem, ou seja, compararemos
@@ -430,3 +418,34 @@ def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
         fa = frame
         tiles_fa = tiles_frame
     return lista_cortes
+
+
+@nb.jit
+def shot_boundary_detection(video, lst_frames, function, limit=0.01):
+    """
+    Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
+    :param lst_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
+    :param function: função de similaridade para comparação entre dois frames
+    :param limit: fator que determinará se o resultado da função e comparação reflete um corte
+    :return: uma lista de dicts que estão dentro do limite especificado pelo limiar
+    """
+    lst_shot_boundary = []
+    fa = lst_frames[0]  # frameA
+    for frame in lst_frames[1:]:
+        pprint(fa)
+        pprint(frame)
+        pprint("function")
+        val = function(fa["frame"], frame["frame"])
+
+        # passou do limiar, corte detectado
+        if val > limit:
+            lst_shot_boundary.append(
+                {
+                    "frame_id_A": fa["frame_id"],
+                    "frame_id_B": frame["frame_id"],
+                    "time": get_time_frame(video, frame["frame_id"]),
+                    "similarity": val,
+                }
+            )
+        fa = frame
+    return lst_shot_boundary
