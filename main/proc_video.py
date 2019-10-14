@@ -2,6 +2,7 @@ import platform
 from datetime import datetime as dt
 from datetime import timedelta
 from pprint import pprint
+import os
 
 import cv2
 import numba as nb
@@ -98,82 +99,6 @@ def get_frame(video, frame_id):
     return frame
 
 
-def load_videos_janela(video_file, cut=25):
-    """
-    essa função abre o video e retorna os frames multiplos de 10
-    :param video_file: arquivo de video que deve ser aberto, para que os frames sejam capturados
-    :param cut: fator de corte para os frames, ou seja, quantidade de fps para criarmos a janela
-    """
-    # extrair alguns frames e salvar, dps gerar o histograma deles
-
-    # print "load_videos"
-    capture = cv2.VideoCapture(video_file)
-
-    read_flag, frame = capture.read()
-    vid_frames = []
-    i = 1
-    # print read_flag
-    janela = 2 * cut + 1
-    frames_janela = []
-
-    # ttl_janelas = 0
-    # retorno = []
-
-    while read_flag:
-        # print i
-        if i <= janela:
-            frames_janela.append(frame)
-        else:
-            # a janela fechou
-            # print(janela)
-            # print(int(len(frames_janela)/2))
-            vid_frames.append(
-                frames_janela[int(len(frames_janela) / 2)]
-            )  # pegando apenas o frame do meio da janela
-
-            frames_janela = [frame]  # limpando a janela e colocado o frame atual nela
-            janela += 2 * cut + 1
-            # print frame.shape
-        read_flag, frame = capture.read()
-        i += 1
-    vid_frames = np.asarray(vid_frames, dtype="uint8")[:-1]
-    capture.release()
-    print("total de frames:", i)
-    print("total de frames selecionados", len(vid_frames))
-    return vid_frames
-
-
-def load_video(video_file):
-    """
-    função para extrair os frames de um video, nessa função especificamente serão retornado os frames em um intervalo
-    de 10, ou seja, a cada 10 frames 1 será retornado.
-    Isso é importante pois não foi possível retornar todos os frames, ele crasha
-    :param video_file: video que deve ser aberto para que seja extraido seus frames
-    :return: um lista contendo os frames, eles já estão prontos para serem exibidos
-    """
-    # print "load_videos"
-    capture = cv2.VideoCapture(video_file)
-
-    read_flag, frame = capture.read()
-    vid_frames = []
-    i = 1
-    # print read_flag
-
-    while read_flag:
-        # print i
-        if i % 25 == 0:
-            vid_frames.append(frame)
-            #                print frame.shape
-        read_flag, frame = capture.read()
-        i += 1
-    vid_frames = np.asarray(vid_frames, dtype="uint8")[:-1]
-    # print 'vid shape'
-    # print vid_frames.shape
-    capture.release()
-    print(i)
-    return vid_frames
-
-
 @nb.jit
 def get_frames(video, fps, resize={}):
     """
@@ -232,7 +157,7 @@ def cos_vectors(arr_a, arr_b):
 
 
 @nb.jit
-def similarity_hist_global(frame_a, frame_b):
+def similarity_hist(frame_a, frame_b):
     """
         Calcula a similaridade entre dois frames utilizando o histograma global e o cosseno do angulo de dois vetores
 
@@ -315,37 +240,6 @@ def compare_times(video, csv_dict, lst_frames):
 
     accuracy = corrects / len(csv_dict)
     return accuracy
-
-
-def tester():
-    # esse é um trecho do meu tester, que eu tava usando para fazer a similaridade entres os frames
-    # play_video("../videos/bf42.mp4")
-    # extraido de : https://www.pyimagesearch.com/2014/07/14/3-ways-compare-histograms-using-opencv-python/
-    # link da documentação: https://docs.opencv.org/2.4/modules/imgproc/doc/histograms.html?highlight=calchist
-    """frames = vito.load_video("../videos/bf42.mp4")
-    i = 0
-    for f in frames[:25]:
-        vito.save_img("../imagens/frames", "frames" + str(i) + ".png", f)
-        #cv2.imshow("f1", f)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
-        i+= 1
-    quit()"""
-
-    image1 = cv2.imread("../imagens/frames/frames0.png")
-    image2 = cv2.imread("../imagens/frames/frames5.png")
-
-    hist1 = cv2.calcHist(
-        [image1], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256]
-    )
-    hist1 = cv2.normalize(hist1, hist1).flatten()
-
-    hist2 = cv2.calcHist(
-        [image2], [0, 1, 2], None, [256, 256, 256], [0, 256, 0, 256, 0, 256]
-    )
-    hist2 = cv2.normalize(hist2, hist2).flatten()
-
-    print("simi entre 2 frames:", cv2.compareHist(hist1, hist2, cv2.HISTCMP_INTERSECT))
 
 
 def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
@@ -449,3 +343,64 @@ def shot_boundary_detection(video, lst_frames, function, limit=0.01):
             )
         fa = frame
     return lst_shot_boundary
+
+
+@nb.jit
+def shot_boundary_detection_grid(
+    video, lst_frames, function, limit=0.01, nparts=5, mask=[]
+):
+
+    # checando a integridade da mascara
+    if len(mask) is 0:
+        mask = []
+        for i in range(nparts * nparts):
+            mask.append(1)
+    elif len(mask) < nparts * nparts:
+        raise Exception("tamanho da mascara não compreende o tamanho de tiles do grid")
+
+    if len(lst_frames) is 0:
+        raise Exception("Lista de frames vazia!")
+
+    lst_shot_boundary = []
+    fa = lst_frames[0]
+
+    for frame in lst_frames[1:]:
+        tiles = cv3.generate_tiles(frame.get("frame"), size=nparts)
+
+        print(len(tiles), frame["frame_id"])
+        value_sim_tiles = []
+        for tile in tiles:
+            value_sim_tiles.append(function(fa["frame"], frame["frame"]))
+
+        value_sim_tiles = np.array(value_sim_tiles)
+        value_sim_tiles = np.multiply(value_sim_tiles, mask)
+
+        sum_values = np.sum(value_sim_tiles)
+        sum_weight = np.sum(mask)
+
+        mean = sum_values / sum_weight
+
+        if mean > limit:
+            lst_shot_boundary.append(
+                {
+                    "frame_id_A": fa["frame_id"],
+                    "frame_id_B": frame["frame_id"],
+                    "similarity": mean,
+                    "time": get_time_frame(video, frame["frame_id"]),
+                }
+            )
+        fa = frame
+    return lst_shot_boundary
+
+
+def save_frames(video, path, lst_frames, prefix="frame", sufix="jpg"):
+    """
+        Dada uma lista de frames, salva-a em um determinado caminho.
+    """
+    for frame in lst_frames:
+        frame_id = frame.get("frame_id")
+        time = get_time_frame(video, frame_id)
+
+        name_arq = "%s_%d_%s.%s" % (prefix, frame_id, time, sufix)
+        cv3.save_img(path, name_arq, frame["frame"])
+    return True
