@@ -626,6 +626,18 @@ def quantization_colors(matrix, color=32):
     return recreate_img(colors, matrix_color_quantizated, nrows, ncols)
 
 
+def color_to_bin(array, color=32):
+    """
+        Retorna a posição do vetor (bin) correspondente a cor quantizada
+    """
+
+    b = (int(array[0]) & color) >> 6
+    g = (int(array[1]) & color) >> 4
+    r = (int(array[2]) & color) >> 2
+
+    return b | g | r
+
+
 def arrays_equal(*arrays):
     bool_verification = True
     for idx in range(1, len(arrays)):
@@ -653,7 +665,10 @@ def __pallet__(matrix, nLins, nCols):
     return meta
 
 
-def __inner_bic__(matrix, nLins, nCols, dict_cor_high, dict_cor_low):
+def __inner_bic__(matrix, nLins, nCols, dict_cor_high, dict_cor_low, qtdColor):
+
+    bic_features = np.zeros(qtdColor * 2, dtype="int")
+
     for i in range(1, nLins - 1):
         for j in range(1, nCols - 1):
             # pixels = [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -666,25 +681,20 @@ def __inner_bic__(matrix, nLins, nCols, dict_cor_high, dict_cor_low):
             if arrays_equal(central, norte, direita, sul, esquerda):
                 # central é interior
                 # matrix[i][j] = 255
-                pix = str(matrix[i][j])
+                pix = color_to_bin(central, qtdColor)
+                bic_features[pix + qtdColor] += 1
 
-                if dict_cor_high.get(pix, 0) == 0:
-                    dict_cor_high[pix] = 1
-                else:
-                    dict_cor_high[pix] += 1
             else:
                 # central é borda
                 # matrix[i][j] = 0
-                pix = str(matrix[i][j])
+                pix = color_to_bin(central, qtdColor)
+                bic_features[pix] += 1
 
-                if dict_cor_low.get(pix, 0) == 0:
-                    dict_cor_low[pix] = 1
-                else:
-                    dict_cor_low[pix] += 1
+    return bic_features
 
 
 # SETADO PARA 1 CANAL APENAS
-def bic(matrixInit, qntCores):
+def bic(matrixInit, qntCores, pallet=False):
     """
     Essa função aplicará a imagem de entrada o descritor de cor bic, que dirá se se os pixels são de borda ou de interior
     essa função retornará a imagem com os pixels transformados
@@ -698,8 +708,14 @@ def bic(matrixInit, qntCores):
     dict_cor_high = {}
     dict_cor_low = {}
 
-    meta = __pallet__(matrix, nLins, nCols)
-    __inner_bic__(matrix, nLins, nCols, dict_cor_high, dict_cor_low)
+    bic_features = __inner_bic__(
+        matrix, nLins, nCols, dict_cor_high, dict_cor_low, qntCores
+    )
+
+    if pallet:
+        meta = __pallet__(matrix, nLins, nCols)
+    else:
+        return bic_features
 
     response_interno = [0 for x in meta]
     for info in meta:
@@ -717,7 +733,12 @@ def bic(matrixInit, qntCores):
         if dict_cor_low.get(color):
             response_externo[idx] = dict_cor_low.get(color)
 
-    return {"pallet": meta, "inner": response_interno, "out": response_externo}
+    return {
+        "pallet": meta,
+        "inner": response_interno,
+        "out": response_externo,
+        "bic_features": bic_features,
+    }
 
 
 def filtro_sobel(matrixInit):

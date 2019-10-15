@@ -191,16 +191,14 @@ def similarity_bic(frame_a, frame_b):
     bic_a = cv3.bic(cv3.quantization_colors(frame_a), 32)
     bic_b = cv3.bic(cv3.quantization_colors(frame_b), 32)
 
-    # caso a qtd de cores não seja igual
-    if len(bic_a.get("pallet")) != len(bic_b.get("pallet")):
-        return 0.0
+    # pega o vetor de caracteristicas do bic se for um dict
+    if isinstance(bic_a, dict):
+        bic_a = bic_a["bic_features"]
+    if isinstance(bic_b, dict):
+        bic_b = bic_b["bic_features"]
 
-    # monta o vetor de caracteristicas do bic
-    array_a = bic_a["inner"] + bic_a["out"]
-    array_b = bic_b["inner"] + bic_b["out"]
-
-    array_a = np.array(array_a)
-    array_b = np.array(array_b)
+    array_a = np.array(bic_a)
+    array_b = np.array(bic_b)
 
     cos = cos_vectors(array_a, array_b)
     return cos
