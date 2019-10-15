@@ -362,20 +362,32 @@ def shot_boundary_detection_grid(
     lst_shot_boundary = []
     fa = lst_frames[0]
 
+    # para cada frame geram-se os tiles da img
     for frame in lst_frames[1:]:
-        tiles = cv3.generate_tiles(frame.get("frame"), size=nparts)
+        tiles_fa = cv3.generate_tiles(fa.get("frame"), size=nparts)
+        tiles_fb = cv3.generate_tiles(frame.get("frame"), size=nparts)
 
-        print(len(tiles), frame["frame_id"])
+        print(frame["frame_id"])
+
+        # para cada tile é feita a similaridade entre eles
         value_sim_tiles = []
-        for tile in tiles:
-            value_sim_tiles.append(function(fa["frame"], frame["frame"]))
+        for idx_tile, tile_fb in enumerate(tiles_fb):
+            tile_fa = tiles_fa[idx_tile]
+
+            # calcula a similaridade entre os tiles do FA com os do FB
+            value_sim_tile = function(tile_fa, tile_fb)
+
+            value_sim_tiles.append(value_sim_tile)
 
         value_sim_tiles = np.array(value_sim_tiles)
+        # multiplica os pesos da máscara com os tiles para dar maior significância
         value_sim_tiles = np.multiply(value_sim_tiles, mask)
 
+        # soma os valores e os pesos
         sum_values = np.sum(value_sim_tiles)
         sum_weight = np.sum(mask)
 
+        # calcula a média ponderada
         mean = sum_values / sum_weight
 
         if mean > limit:
