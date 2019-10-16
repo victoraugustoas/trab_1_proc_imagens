@@ -23,7 +23,6 @@ warnings.simplefilter("ignore")
 def open_img(path, gray=False):
     """
         Abre a imagem
-
         path: local da imagem
         gray: se a imagem será aberta em tons de cinza
     """
@@ -37,11 +36,9 @@ def open_img(path, gray=False):
 def save_img(path, name_arq, matrix):
     """
         Salva a imagem
-
         path: local onde será salvo
         name_arq: nome do arquivo
         matrix: obj da img
-
         gray: true
     """
     path = os.path.join(path, name_arq)
@@ -51,12 +48,9 @@ def save_img(path, name_arq, matrix):
 def status_img(matrix):
     """
         Recebe o obj da img
-
         retorna o numero de linhas, colunas e canais da img
-
         retorno (nrows, ncols, channels) se imagem colorida
         retorno (nrows, ncols, 1) se imagem em escala de cinza
-
         gray: true
     """
     if len(matrix.shape) > 2:
@@ -66,18 +60,17 @@ def status_img(matrix):
 
 
 def generate_histogram(
-    values,
-    title,
-    name_file,
-    color,
-    names=np.arange(0, 256),
-    path="./data",
-    xlabel="Valores de cinza",
-    ylabel="Frequência",
+        values,
+        title,
+        name_file,
+        color,
+        names=np.arange(0, 256),
+        path="./data",
+        xlabel="Valores de cinza",
+        ylabel="Frequência",
 ):
     """
         Gere o histograma de um vetor
-
         names: valores do eixo x
         values: valores correspondentes aos names
         title: titulo do gráfico
@@ -99,10 +92,8 @@ def generate_histogram(
 def brightness(matrix, coefficient):
     """
         Recebe o obj da imagem e um coeficiente
-
         Aplica uma soma dos pixels da imagem com o coeficiente
         para aumentar o brilho
-
         gray: true
     """
     nrows, ncols, channels = status_img(matrix)
@@ -130,7 +121,6 @@ def brightness(matrix, coefficient):
 def negative(matrix):
     """
         Recebe o obj de imagem e transforma a imagem em negativo
-
         gray: true
     """
     nrows, ncols, channels = status_img(matrix)
@@ -152,9 +142,8 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
             hist_green,
             hist_red
         representando os histogramas de uma imagem
-
         Gera 3 gráficos de histogramas, 1 para cada vetor
-        
+
         path: local de destino
         prefix: prefixo do nome do arquivo
     """
@@ -189,12 +178,9 @@ def generate_histograms(hist_blue, hist_green, hist_red, path, prefix=""):
 def histogram_global(matrix):
     """
         Calcula o histograma global da imagem e retorna 3 vetores
-
         matrix: obj da img
-
         retorna (hist_blue, hist_green, hist_red) para img com 3 bandas
         retorna (hist_blue) para img com 1 banda
-
         gray: true
     """
     nrows, ncols, channels = status_img(matrix)
@@ -227,11 +213,9 @@ def histogram_global(matrix):
 def histogram_local(matrix, nparts, channel=0):
     """
         Recebe o obj da img
-
         nparts: qtd de partições da imagem (n*n)
-        
-        channel: valor do canal b=1, g=2, r=3
 
+        channel: valor do canal b=1, g=2, r=3
         retorna uma lista com vetores de histograma
     """
 
@@ -251,7 +235,6 @@ def histogram_local(matrix, nparts, channel=0):
 def save_vector(path, *vectors, prefix="", name=""):
     """
         Recebe vetores e concatena-os
-
         path: local de destino
         prefix: prefixo do nome do arquivo
         *vectors: vetores a serem concatenados
@@ -288,15 +271,10 @@ def generate_position(max_lin, max_col):
 def generate_noise(matrixInit, percent=10, noise="salt"):
     """
     dada uma imagem, irá inserir ruido nela, aleatóriamente, obedecendo uma porcentagem.
-
     :param matrixInit: a imagem que se deseja adicionar ruido tipo sal
-
     :param percent: a porcentagem de ruido que se deseja aplicar na imagem (valor inteiro)
-
     :param noise: variavel que carrega o tipo de ruido, "salt" = branco, "pepper" = preto
-
     :return: a matrix referente a imagem, porém acrescido de ruido
-
     gray: true
     """
     matrix = matrixInit.copy()
@@ -341,13 +319,11 @@ def generate_noise(matrixInit, percent=10, noise="salt"):
 def filtro_media(matrixInit, iterations=1):
     """
     aplica o filtro da media nos pixels da imagem, com uma janela 3x3
-    
+
     :param matrixInit: imagem a qual deve ser aplicado o filtro
-    
+
     :param iterations: valor das k iterações
-
     :return: copia da imagem com o filtro aplicado
-
     gray: true
     """
 
@@ -391,13 +367,11 @@ def filtro_media(matrixInit, iterations=1):
 def filtro_moda(matrixInit, iterations=1):
     """
     essa função aplica o filtro da moda na imagem dada como entrada
-    
+
     :param matrixInit: a matriz referente a imagem a ser processada
-    
+
     :param iterations: numero de iterações a ser aplicado na imagem
-
     :return: a matriz processada pela função
-
     gray: true
     """
     matrix = matrixInit.copy()
@@ -436,13 +410,9 @@ def filtro_moda(matrixInit, iterations=1):
 def filtro_mediana(matrixInit, iterations=1):
     """
     essa função aplica o filtro da mediana na imagem dada como entrada
-
     :param matrixInit: a matriz referente a imagem a ser processada
-
     :param iterations: o numero de iterações que o filtro deve ser aplicado
-
     :return: a matriz processada pela função
-
     gray: true
     """
     matrix = matrixInit.copy()
@@ -477,9 +447,8 @@ def filtro_mediana(matrixInit, iterations=1):
 def hist_to_img(matrix, hist):
     """
         Coloca os valores do histograma na imagem
-        
-        matrix: matriz em escala de cinza
 
+        matrix: matriz em escala de cinza
         hist: histograma com os valores
     """
 
@@ -497,7 +466,6 @@ def hist_to_img(matrix, hist):
 def equalize_hist(matrix, hist_vect):
     """
         Equaliza o histograma de uma imagem em escala de cinza
-
         matrix: obj da img
         hist_vect: histograma da imagem em uma banda
     """
@@ -529,7 +497,6 @@ def equalize_hist(matrix, hist_vect):
 def generate_tiles(matrix, size=5):
     """
         Retorna um array com as partições da imagem
-
         matrix: obj da img
         size: tamanho da grid (n*n)
     """
@@ -543,10 +510,10 @@ def generate_tiles(matrix, size=5):
     for i in range(size):
         for j in range(size):
             part = matrix[
-                (i * chunk_row) : (i * chunk_row) + chunk_row,
-                (j * chunk_col) : (j * chunk_col) + chunk_col,
-                :,
-            ]
+                   (i * chunk_row): (i * chunk_row) + chunk_row,
+                   (j * chunk_col): (j * chunk_col) + chunk_col,
+                   :,
+                   ]
             tiles.append(part)
 
     return tiles
@@ -555,14 +522,13 @@ def generate_tiles(matrix, size=5):
 def join_tiles(tiles, size=5):
     """
         Junta todos as partes da img em uma matriz
-
         tiles: array com as partes da img
         size: tamanho da grid (n*n)
     """
     aux_matrix = []
     for j in range(size):
         j = j * size
-        aux_arr = np.concatenate(tiles[j : j + size], axis=1)
+        aux_arr = np.concatenate(tiles[j: j + size], axis=1)
         aux_matrix.append(aux_arr)
     aux_matrix = np.concatenate(aux_matrix[:], axis=0)
 
@@ -572,7 +538,6 @@ def join_tiles(tiles, size=5):
 def recreate_img(colors, matrix_to_array, nrows, ncols):
     """
         Recria a matriz de imagem, com base nas cores e no vetor da imagem
-
         colors: vetor de cores com X cores
         matrix_to_array: vetor de cores da imagem que sofreu quantização
         nrows: # de linhas da img resultante
@@ -595,7 +560,6 @@ def recreate_img(colors, matrix_to_array, nrows, ncols):
 def quantization_colors(matrix, color=32):
     """
         Retorna a imagem com redução de cor
-
         matrix: obj da img
         color: qtd de cores presentes na imagem resultante
     """
@@ -642,7 +606,7 @@ def arrays_equal(*arrays):
     bool_verification = True
     for idx in range(1, len(arrays)):
         bool_verification = (
-            np.array_equal(arrays[idx - 1], arrays[idx]) and bool_verification
+                np.array_equal(arrays[idx - 1], arrays[idx]) and bool_verification
         )
     return bool_verification
 
@@ -666,7 +630,6 @@ def __pallet__(matrix, nLins, nCols):
 
 
 def __inner_bic__(matrix, nLins, nCols, dict_cor_high, dict_cor_low, qtdColor):
-
     bic_features = np.zeros(qtdColor * 2, dtype="int")
 
     for i in range(1, nLins - 1):
@@ -788,7 +751,6 @@ def filtro_sobel(matrixInit):
 def linear_enhancement(matrix, a, b):
     """
         Altera o contraste da imagem e brilho de acordo com os fatores de parametro
-
         matrix: obj da img
         a: inclinação da reta, altera o contraste da img
         b: altera o brilho da img
@@ -844,7 +806,6 @@ def fatiamento(matrizInit, nv0=0, nv1=190, limiar=120):
 def resize_img(matrix, percent=50, dim=None):
     """
         Redimensiona a imagem de acordo com a porcentagem
-
         percent: valor inteiro entre 0 e 100
         dim: tupla com valores inteiros de largura e altura respectivamente
     """
@@ -858,3 +819,4 @@ def resize_img(matrix, percent=50, dim=None):
         return cv2.resize(matrix, (width, height))
     else:
         return cv2.resize(matrix, dim)
+

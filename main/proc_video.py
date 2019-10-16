@@ -367,7 +367,7 @@ def shot_boundary_detection_grid(
         tiles_fa = cv3.generate_tiles(fa.get("frame"), size=nparts)
         tiles_fb = cv3.generate_tiles(frame.get("frame"), size=nparts)
 
-        print(frame["frame_id"])
+        print(fa["frame_id"], frame["frame_id"])
 
         # para cada tile é feita a similaridade entre eles
         value_sim_tiles = []
