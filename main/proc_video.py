@@ -234,9 +234,13 @@ def compare_times(video, csv_dict, lst_frames):
         max_value = {"second": time.minute + 1, "minute": time.hour}
 
         values = list(filter(lambda x: compare(x, min_value, max_value), lst_frames))
+        pprint(values)
         corrects += len(values)
 
     accuracy = corrects / len(csv_dict)
+    print("corrects", corrects)
+    print("len(csv_dict)", len(csv_dict))
+    print("accuracy", accuracy)
     return accuracy
 
 
@@ -323,6 +327,7 @@ def shot_boundary_detection(video, lst_frames, function, limit=1):
     """
     lst_shot_boundary = []
     fa = lst_frames[0]  # frameA
+    percent = 0
     for frame in lst_frames[1:]:
         val = function(fa["frame"], frame["frame"])
 
@@ -337,6 +342,8 @@ def shot_boundary_detection(video, lst_frames, function, limit=1):
                 }
             )
         fa = frame
+        percent += 1
+        print("# concluído - %d/%d" % (percent, len(lst_frames)))
     return lst_shot_boundary
 
 
