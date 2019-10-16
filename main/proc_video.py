@@ -313,7 +313,7 @@ def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
 
 
 @nb.jit
-def shot_boundary_detection(video, lst_frames, function, limit=0.01):
+def shot_boundary_detection(video, lst_frames, function, limit=1):
     """
     Função para manipular a lista contendo os frames extraidos de um video, e detectar entre quais deles ocorre um corte
     :param lst_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
@@ -324,13 +324,10 @@ def shot_boundary_detection(video, lst_frames, function, limit=0.01):
     lst_shot_boundary = []
     fa = lst_frames[0]  # frameA
     for frame in lst_frames[1:]:
-        pprint(fa)
-        pprint(frame)
-        pprint("function")
         val = function(fa["frame"], frame["frame"])
 
         # passou do limiar, corte detectado
-        if val > limit:
+        if val <= limit:
             lst_shot_boundary.append(
                 {
                     "frame_id_A": fa["frame_id"],
@@ -345,7 +342,7 @@ def shot_boundary_detection(video, lst_frames, function, limit=0.01):
 
 @nb.jit
 def shot_boundary_detection_grid(
-    video, lst_frames, function, limit=0.01, nparts=5, mask=[]
+    video, lst_frames, function, limit=1, nparts=5, mask=[]
 ):
 
     # checando a integridade da mascara
@@ -390,7 +387,7 @@ def shot_boundary_detection_grid(
         # calcula a média ponderada
         mean = sum_values / sum_weight
 
-        if mean > limit:
+        if mean <= limit:
             lst_shot_boundary.append(
                 {
                     "frame_id_A": fa["frame_id"],
