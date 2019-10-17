@@ -132,8 +132,9 @@ imagens/*
 
 # videos
 videos/*
+videos/zip/*
 !videos/.gitkeep
-!videos/zip
+
 
 # data folder
 main/data/*

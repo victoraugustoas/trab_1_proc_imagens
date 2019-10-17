@@ -6,7 +6,7 @@ limiar = [30, 40, 50, 60, 70, 80, 90]
 tam_img = [15, 40]
 algs = ["bic", "hist"]
 
-for i in range(1, 11):
+for i in range(1, 2):
     i = str(i)
     video_path = os.path.join(PATH_VIDEO, "video_" + i + ".mp4")
     csv_path = os.path.join(PATH_VIDEO, "cortes_video" + i + ".csv")
@@ -34,6 +34,4 @@ for i in range(1, 11):
                 # abre o comando em um terminal virtual para execução com onome igual video_X_tam_limiar
                 cmd = "tmux new -ds %s '%s'" % (name_session, command)
                 print(cmd)
-                os.system(cmd)
-
-                break
+                os.system(cmd + '&')

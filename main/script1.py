@@ -15,12 +15,18 @@ Params:
 4 - path csv
 5 - algoritmo
 """
-
+'''
 percent_video = int(sys.argv[1])
 limit = float(sys.argv[2])
 path_video = sys.argv[3]
 path_csv = sys.argv[4]
-alg = sys.argv[5]
+alg = sys.argv[5'''
+
+percent_video = 15
+limit = 0.90
+path_video = "../videos/video1.mp4"
+path_csv = "../videos/cortes_video1.csv"
+alg = "bic"
 
 if alg == "bic":
     alg = cv4.similarity_bic
@@ -39,6 +45,7 @@ frames = cv4.get_frames(
     video, cv4.status_video(video).get("fps"), resize={"percent": percent_video}
 )
 
+print(len(frames))
 shots = cv4.shot_boundary_detection(video, frames, alg, limit=limit)
 
 print(cv4.compare_times(video, csv, shots))
