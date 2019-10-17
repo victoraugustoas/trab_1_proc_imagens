@@ -13,7 +13,7 @@ now = datetime.now()
 dt_string = now.strftime("%H:%M:%S")
 print("inicio =", dt_string)	
 
-for i in range(4, 5):
+for i in range(3, 4):
     print("processando o video ", i)
     i = str(i)
     str_alg = ""
@@ -39,8 +39,10 @@ for i in range(4, 5):
                     alg = cv4.similarity_hist
                 #print(len(frames))
                 print("processando video:", i, percent_limiar, tam_img_percent, alg)
-                shots = cv4.shot_boundary_detection(video, frames, alg, limit=percent_limiar/100)
+                #shots = cv4.shot_boundary_detection(video, frames, alg, limit=percent_limiar/100)
                 #print(shots)
+                limit = percent_limiar/100
+                shots = cv4.shot_boundary_detection_grid(video, frames, alg, limit)
                 aux = cv4.compare_times(video, csv, shots)
                 #escrevendo a precisao do trem num arquivo
                 with open("data/filevd_" + str(i) +"_"+ str(percent_limiar) +"_"+ str(tam_img_percent) +"_"+ str_alg+".txt",
