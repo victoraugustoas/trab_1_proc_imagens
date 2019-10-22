@@ -37,6 +37,10 @@ def to_arq(
         + str(tam_img_percent)
         + "_"
         + str_alg
+        + "_"
+        + str(type_function)
+        + "_"
+        + str(tam_grid_str)
         + ".txt",
         "w",
         encoding="utf-8",
@@ -46,8 +50,8 @@ def to_arq(
         saida.write("percent limiar: " + str(percent_limiar) + "\n")
         saida.write("tam_img:" + str(tam_img_percent) + "\n")
         saida.write("algoritmo:" + str_alg + "\n")
-        saida.write("type function:" + type_function + "\n")
-        saida.write("tam grid:" + tam_grid_str + "\n")
+        saida.write("type function:" + str(type_function) + "\n")
+        saida.write("tam grid:" + str(tam_grid_str) + "\n")
 
         for linha in shots:
             saida.write(str(linha))

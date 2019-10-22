@@ -1,6 +1,8 @@
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
+from pprint import pprint
+from datetime import datetime
 
 fileCabo = "Medição - CabCasa.csv"
 file2Wifi = "Medição - Wifi.csv"
@@ -13,77 +15,47 @@ def extrai_dados(file):
     :return: 5 listas contendo os dados referentes aos 3 peridos (manha, tarde, noite, download, upload)
     """
     with open(file, encoding="utf-8") as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        line_count = 0
-        l_manha = []
-        l_tarde = []
-        l_noite = []
-        l_dl = []
-        l_up = []
-        for row in csv_reader:
-            if line_count == 0:
-                cabeçalho = row
-                line_count += 1
-            else:
-                data = row[1]
-                hora = row[2]
-                periodo = row[3]
-                ping = row[5]
-                dl = row[6]
-                up = row[7]
+        csv_reader = csv.DictReader(csv_file)
+        return list(csv_reader)
 
-                tupla = (data, hora, int(ping), float(dl), float(up))
-                l_dl.append(float(dl))
-                l_up.append(float(up))
-                if periodo == "manhã":
-                    l_manha.append(tupla)
-                elif periodo == "tarde":
-                    l_tarde.append(tupla)
-                else:
-                   l_noite.append(tupla)
-                line_count += 1
-        return l_manha, l_tarde, l_noite, l_dl, l_up
 
 tuplaCabo = extrai_dados(fileCabo)
 tuplaWF = extrai_dados(file2Wifi)
 
 #   0    1       2           3          4
-#(data, hora, int(ping), float(dl), float(up))
-#organizando os dados provenientes das funções
-manha_cabo = tuplaCabo[0]
-tarde_cabo = tuplaCabo[1]
-noite_cabo = tuplaCabo[2]
-dl_cabo = tuplaCabo[3]
-up_cabo = tuplaCabo[4]
+# (data, hora, int(ping), float(dl), float(up))
+# organizando os dados provenientes das funções
+manha_cabo = list(filter(lambda x: x["Período"] == "manhã", tuplaCabo))
+tarde_cabo = list(filter(lambda x: x["Período"] == "tarde", tuplaCabo))
+noite_cabo = list(filter(lambda x: x["Período"] == "noite", tuplaCabo))
+dl_cabo = list(map(lambda x: float(x["download"]), tuplaCabo))
+up_cabo = list(map(lambda x: float(x["upload"]), tuplaCabo))
 
-manhawf = tuplaWF[0]
-tardewf = tuplaWF[1]
-noitewf = tuplaWF[2]
-dl_wf = tuplaWF[3]
-up_wf = tuplaWF[4]
 
-print(len(manha_cabo), len(tarde_cabo), len(noite_cabo), len(manha_cabo) + len(tarde_cabo) + len(noite_cabo))
-print(len(dl_cabo), len(up_cabo))
-print(len(manhawf), len(tardewf), len(noitewf), len(manhawf) + len(tardewf) + len(noitewf))
-print(len(dl_wf), len(up_wf))
+manhawf = list(filter(lambda x: x["Período"] == "manhã", tuplaWF))
+tardewf = list(filter(lambda x: x["Período"] == "tarde", tuplaWF))
+noitewf = list(filter(lambda x: x["Período"] == "noite", tuplaWF))
+dl_wf = list(map(lambda x: float(x["download"]), tuplaWF))
+up_wf = list(map(lambda x: float(x["upload"]), tuplaWF))
 
-#plotando grafico cabo cronológico do periodo analisado Cabo vs Wifi
-#download todas as medições
+
+# plotando grafico cabo cronológico do periodo analisado Cabo vs Wifi
+# download todas as medições
 aux1 = np.array(dl_cabo)
 aux2 = np.array(dl_wf)
-plt.plot(aux1, "b", label = "cabeada")
-wf = plt.plot(aux2, "g", label = "wifi")
+plt.plot(aux1, "b", label="cabeada")
+wf = plt.plot(aux2, "g", label="wifi")
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
 plt.title("Velocidade Download")
 plt.legend(loc="best")
 plt.show()
 
-#upload todas as medições
+# upload todas as medições
 aux1 = np.array(up_cabo)
 aux2 = np.array(up_wf)
-plt.plot(aux1, label = "cabeada")
-wf = plt.plot(aux2, label = "wifi")
+plt.plot(aux1, label="cabeada")
+wf = plt.plot(aux2, label="wifi")
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
 plt.title("Velocidade Upload")
@@ -91,31 +63,10 @@ plt.legend(loc="best")
 plt.show()
 
 
-manha_dl = []
-manha_up = []
-tarde_dl = []
-tarde_up = []
-noite_dl = []
-noite_up = []
-ping_cabo = []
-ping_wifi = []
-for elemento in manha_cabo:
-    manha_dl.append(elemento[3])
-    manha_up.append(elemento[4])
-    ping_cabo.append(elemento[2])
-for elemento in tarde_cabo:
-    tarde_dl.append(elemento[3])
-    tarde_up.append(elemento[4])
-    ping_cabo.append(elemento[2])
-for elemento in noite_cabo:
-    noite_dl.append(elemento[3])
-    noite_up.append(elemento[4])
-    ping_cabo.append(elemento[2])
-
-#medições de DOWNLOAD por periodo CABO
-manha_dl = np.array(manha_dl)
-tarde_dl = np.array(tarde_dl)
-noite_dl = np.array(noite_dl)
+# medições de DOWNLOAD por periodo CABO
+manha_dl = np.array(list(map(lambda x: float(x["download"]), manha_cabo)))
+tarde_dl = np.array(list(map(lambda x: float(x["download"]), tarde_cabo)))
+noite_dl = np.array(list(map(lambda x: float(x["download"]), noite_cabo)))
 
 plt.subplot(311)
 plt.plot(manha_dl)
@@ -130,10 +81,10 @@ plt.plot(noite_dl, "r")
 plt.ylabel("velocidade (Mbps)")
 plt.show()
 
-#medições de UPLOAD por periodo CABO
-manha_up = np.array(manha_up)
-tarde_up = np.array(tarde_up)
-noite_up = np.array(noite_up)
+# medições de UPLOAD por periodo CABO
+manha_up = np.array(list(map(lambda x: float(x["upload"]), manha_cabo)))
+tarde_up = np.array(list(map(lambda x: float(x["upload"]), tarde_cabo)))
+noite_up = np.array(list(map(lambda x: float(x["upload"]), noite_cabo)))
 plt.subplot(311)
 plt.plot(manha_up)
 plt.xlabel("Nº Medição")
@@ -150,29 +101,11 @@ plt.show()
 ############################################################################
 ############################################################################
 
-manha_dl = []
-manha_up = []
-tarde_dl = []
-tarde_up = []
-noite_dl = []
-noite_up = []
-for elemento in manhawf:
-    manha_dl.append(elemento[3])
-    manha_up.append(elemento[4])
-    ping_wifi.append(elemento[2])
-for elemento in tardewf:
-    tarde_dl.append(elemento[3])
-    tarde_up.append(elemento[4])
-    ping_wifi.append(elemento[2])
-for elemento in noitewf:
-    noite_dl.append(elemento[3])
-    noite_up.append(elemento[4])
-    ping_wifi.append(elemento[2])
 
-#medições de DOWNLOAD por periodo WIFI
-manha_dl = np.array(manha_dl)
-tarde_dl = np.array(tarde_dl)
-noite_dl = np.array(noite_dl)
+# medições de DOWNLOAD por periodo WIFI
+manha_dl = np.array(list(map(lambda x: float(x["download"]), manhawf)))
+tarde_dl = np.array(list(map(lambda x: float(x["download"]), tardewf)))
+noite_dl = np.array(list(map(lambda x: float(x["download"]), noitewf)))
 
 plt.subplot(311)
 plt.plot(manha_dl)
@@ -187,10 +120,10 @@ plt.plot(noite_dl, "r")
 plt.ylabel("velocidade (Mbps)")
 plt.show()
 
-#medições de UPLOAD por periodo WIFI
-manha_up = np.array(manha_up)
-tarde_up = np.array(tarde_up)
-noite_up = np.array(noite_up)
+# medições de UPLOAD por periodo WIFI
+manha_up = np.array(list(map(lambda x: float(x["upload"]), manhawf)))
+tarde_up = np.array(list(map(lambda x: float(x["upload"]), tardewf)))
+noite_up = np.array(list(map(lambda x: float(x["upload"]), noitewf)))
 
 plt.subplot(311)
 plt.plot(manha_up)
@@ -206,7 +139,10 @@ plt.ylabel("velocidade (Mbps)")
 plt.show()
 
 #############################Grafico ping######################################
-#plotando grafico do ping
+# plotando grafico do ping
+ping_cabo = np.array(list(map(lambda x: float(x["ping"]), tuplaCabo)))
+ping_wifi = np.array(list(map(lambda x: float(x["ping"]), tuplaWF)))
+
 plt.subplot(211)
 plt.plot(ping_cabo, "pink")
 plt.ylabel("Ping (ms)")
@@ -219,60 +155,57 @@ plt.show()
 
 #################################Gráfico dl/up dia de semana vs fim de semana######################
 #   0    1       2           3          4
-#(data, hora, int(ping), float(dl), float(up))
-#organizando os dados provenientes das funções
-#listas com as informações da coleta nos dias de semana e nos fins de semana cabo
+# (data, hora, int(ping), float(dl), float(up))
+# organizando os dados provenientes das funções
+# listas com as informações da coleta nos dias de semana e nos fins de semana cabo
+
+semana = list(
+    filter(
+        lambda x: True
+        if x["Data"] != "19/10/2019" or x["Data"] != "20/10/2019"
+        else False,
+        tuplaCabo,
+    )
+)
+
+fds = list(
+    filter(
+        lambda x: True
+        if x["Data"] == "19/10/2019" or x["Data"] == "20/10/2019"
+        else False,
+        tuplaCabo,
+    )
+)
+dl_semana_cabo = list(map(lambda x: float(x["download"]), semana))
+up_semana_cabo = list(map(lambda x: float(x["upload"]), semana))
+dl_fds_cabo = list(map(lambda x: float(x["download"]), fds))
+up_fds_cabo = list(map(lambda x: float(x["upload"]), fds))
 
 
+semana = list(
+    filter(
+        lambda x: True
+        if x["Data"] != "19/10/2019" or x["Data"] != "20/10/2019"
+        else False,
+        tuplaWF,
+    )
+)
 
-dl_semana_cabo = []
-up_semana_cabo = []
-dl_fds_cabo = []
-up_fds_cabo = []
+fds = list(
+    filter(
+        lambda x: True
+        if x["Data"] == "19/10/2019" or x["Data"] == "20/10/2019"
+        else False,
+        tuplaWF,
+    )
+)
 
-for elemento in tarde_cabo:
-    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
-        dl_fds_cabo.append(elemento[3])
-        up_fds_cabo.append(elemento[4])
-    else:
-        dl_semana_cabo.append(elemento[3])
-        up_semana_cabo.append(elemento[4])
+dl_fds_wifi = list(map(lambda x: float(x["download"]), semana))
+up_fds_wifi = list(map(lambda x: float(x["upload"]), semana))
+dl_semana_wifi = list(map(lambda x: float(x["download"]), fds))
+up_semana_wifi = list(map(lambda x: float(x["upload"]), fds))
 
-for elemento in noite_cabo:
-    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
-        dl_fds_cabo.append(elemento[3])
-        up_fds_cabo.append(elemento[4])
-    else:
-        dl_semana_cabo.append(elemento[3])
-        up_semana_cabo.append(elemento[4])
-# tarde_cabo
-# noite_cabo
-# tardewf
-# noitewf
-
-dl_fds_wifi = []
-up_fds_wifi = []
-dl_semana_wifi = []
-up_semana_wifi = []
-
-for elemento in tardewf:
-    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
-        dl_fds_wifi.append(elemento[3])
-        up_fds_wifi.append(elemento[4])
-    else:
-        dl_semana_wifi.append(elemento[3])
-        up_semana_wifi.append(elemento[4])
-
-for elemento in noitewf:
-    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
-        dl_fds_wifi.append(elemento[3])
-        up_fds_wifi.append(elemento[4])
-    else:
-        dl_semana_wifi.append(elemento[3])
-        up_semana_wifi.append(elemento[4])
-
-
-#dl vs dl semana/fds
+# dl vs dl semana/fds
 plt.subplot(211)
 plt.plot(dl_semana_cabo, "brown")
 plt.ylabel("Velocidade (Mbps)")
@@ -297,7 +230,7 @@ plt.show()
 ##########################################
 ##########################################
 
-#dl vs dl semana/fds
+# dl vs dl semana/fds
 plt.subplot(211)
 plt.plot(dl_semana_wifi, "green")
 plt.ylabel("Velocidade (Mbps)")
