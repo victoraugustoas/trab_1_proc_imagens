@@ -97,15 +97,20 @@ tarde_dl = []
 tarde_up = []
 noite_dl = []
 noite_up = []
+ping_cabo = []
+ping_wifi = []
 for elemento in manha_cabo:
     manha_dl.append(elemento[3])
     manha_up.append(elemento[4])
+    ping_cabo.append(elemento[2])
 for elemento in tarde_cabo:
     tarde_dl.append(elemento[3])
     tarde_up.append(elemento[4])
+    ping_cabo.append(elemento[2])
 for elemento in noite_cabo:
     noite_dl.append(elemento[3])
     noite_up.append(elemento[4])
+    ping_cabo.append(elemento[2])
 
 #medições de DOWNLOAD por periodo CABO
 manha_dl = np.array(manha_dl)
@@ -116,7 +121,7 @@ plt.subplot(311)
 plt.plot(manha_dl)
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
-plt.title("Velocidade Download Manhã/Tarde/Noite")
+plt.title("Velocidade Download Cabo Manhã/Tarde/Noite")
 plt.subplot(312)
 plt.plot(tarde_dl, "y")
 plt.ylabel("velocidade (Mbps)")
@@ -133,7 +138,7 @@ plt.subplot(311)
 plt.plot(manha_up)
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
-plt.title("Velocidade Upload Manhã/Tarde/Noite")
+plt.title("Velocidade Upload Cabo Manhã/Tarde/Noite")
 plt.subplot(312)
 plt.plot(tarde_up, "y")
 plt.ylabel("velocidade (Mbps)")
@@ -154,12 +159,15 @@ noite_up = []
 for elemento in manhawf:
     manha_dl.append(elemento[3])
     manha_up.append(elemento[4])
+    ping_wifi.append(elemento[2])
 for elemento in tardewf:
     tarde_dl.append(elemento[3])
     tarde_up.append(elemento[4])
+    ping_wifi.append(elemento[2])
 for elemento in noitewf:
     noite_dl.append(elemento[3])
     noite_up.append(elemento[4])
+    ping_wifi.append(elemento[2])
 
 #medições de DOWNLOAD por periodo WIFI
 manha_dl = np.array(manha_dl)
@@ -170,7 +178,7 @@ plt.subplot(311)
 plt.plot(manha_dl)
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
-plt.title("Velocidade Download Manhã/Tarde/Noite")
+plt.title("Velocidade Download Wifi Manhã/Tarde/Noite")
 plt.subplot(312)
 plt.plot(tarde_dl, "y")
 plt.ylabel("velocidade (Mbps)")
@@ -188,11 +196,124 @@ plt.subplot(311)
 plt.plot(manha_up)
 plt.xlabel("Nº Medição")
 plt.ylabel("velocidade (Mbps)")
-plt.title("Velocidade Upload Manhã/Tarde/Noite")
+plt.title("Velocidade Upload Wifi Manhã/Tarde/Noite")
 plt.subplot(312)
 plt.plot(tarde_up, "y")
 plt.ylabel("velocidade (Mbps)")
 plt.subplot(313)
 plt.plot(noite_up, "r")
 plt.ylabel("velocidade (Mbps)")
+plt.show()
+
+#############################Grafico ping######################################
+#plotando grafico do ping
+plt.subplot(211)
+plt.plot(ping_cabo, "pink")
+plt.ylabel("Ping (ms)")
+plt.title("Latência Cabo/Wifi")
+plt.subplot(212)
+plt.plot(ping_wifi, "orange")
+plt.xlabel("Nº Medição")
+plt.ylabel("Ping (ms)")
+plt.show()
+
+#################################Gráfico dl/up dia de semana vs fim de semana######################
+#   0    1       2           3          4
+#(data, hora, int(ping), float(dl), float(up))
+#organizando os dados provenientes das funções
+#listas com as informações da coleta nos dias de semana e nos fins de semana cabo
+
+
+
+dl_semana_cabo = []
+up_semana_cabo = []
+dl_fds_cabo = []
+up_fds_cabo = []
+
+for elemento in tarde_cabo:
+    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
+        dl_fds_cabo.append(elemento[3])
+        up_fds_cabo.append(elemento[4])
+    else:
+        dl_semana_cabo.append(elemento[3])
+        up_semana_cabo.append(elemento[4])
+
+for elemento in noite_cabo:
+    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
+        dl_fds_cabo.append(elemento[3])
+        up_fds_cabo.append(elemento[4])
+    else:
+        dl_semana_cabo.append(elemento[3])
+        up_semana_cabo.append(elemento[4])
+# tarde_cabo
+# noite_cabo
+# tardewf
+# noitewf
+
+dl_fds_wifi = []
+up_fds_wifi = []
+dl_semana_wifi = []
+up_semana_wifi = []
+
+for elemento in tardewf:
+    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
+        dl_fds_wifi.append(elemento[3])
+        up_fds_wifi.append(elemento[4])
+    else:
+        dl_semana_wifi.append(elemento[3])
+        up_semana_wifi.append(elemento[4])
+
+for elemento in noitewf:
+    if elemento[0] == "20/10/2019" or elemento[0] == "19/10/2019":
+        dl_fds_wifi.append(elemento[3])
+        up_fds_wifi.append(elemento[4])
+    else:
+        dl_semana_wifi.append(elemento[3])
+        up_semana_wifi.append(elemento[4])
+
+
+#dl vs dl semana/fds
+plt.subplot(211)
+plt.plot(dl_semana_cabo, "brown")
+plt.ylabel("Velocidade (Mbps)")
+plt.title("Download Cabo Semana/FDS")
+plt.subplot(212)
+plt.plot(dl_fds_cabo, "cyan")
+plt.xlabel("Nº Medição")
+plt.ylabel("Velocidade (Mbps)")
+plt.show()
+
+plt.subplot(211)
+plt.plot(up_semana_cabo, "brown")
+plt.ylabel("Velocidade (Mbps)")
+plt.title("Upload Cabo Semana/FDS")
+plt.subplot(212)
+plt.plot(up_fds_cabo, "cyan")
+plt.xlabel("Nº Medição")
+plt.ylabel("Velocidade (Mbps)")
+plt.show()
+
+##########################################
+##########################################
+##########################################
+
+#dl vs dl semana/fds
+plt.subplot(211)
+plt.plot(dl_semana_wifi, "green")
+plt.ylabel("Velocidade (Mbps)")
+plt.title("Download Wifi Semana/FDS")
+plt.subplot(212)
+plt.plot(dl_fds_wifi, "black")
+plt.xlabel("Nº Medição")
+plt.ylabel("Velocidade (Mbps)")
+plt.show()
+
+plt.subplot(211)
+plt.plot(up_semana_wifi, "green")
+plt.ylabel("Velocidade (Mbps)")
+plt.title("Upload Wifi Semana/FDS")
+plt.subplot(212)
+plt.plot(up_fds_wifi, "black")
+plt.xlabel("Nº Medição")
+plt.ylabel("Velocidade (Mbps)")
 plt.show()
