@@ -157,6 +157,37 @@ def cos_vectors(arr_a, arr_b):
 
 
 @nb.jit
+def dlog(arr_a, arr_b):
+    """
+        Calcula a função dlog para 2 frames
+
+        retorna um valor entre 0 e 9
+    """
+    q = []
+    d = []
+    for pos_a in arr_a:
+        if pos_a == 0:
+            q.append(0)
+        elif pos_a > 0 and pos_a <= 1:
+            q.append(1)
+        else:
+            q.append(np.log2(pos_a) + 1)
+
+    for pos_b in arr_b:
+        if pos_b == 0:
+            d.append(0)
+        elif pos_b > 0 and pos_b <= 1:
+            d.append(1)
+        else:
+            d.append(np.log2(pos_b) + 1)
+
+    q = np.array(q)
+    d = np.array(d)
+
+    return np.sum(abs(q - d))
+
+
+@nb.jit
 def similarity_hist(frame_a, frame_b):
     """
         Calcula a similaridade entre dois frames utilizando o histograma global e o cosseno do angulo de dois vetores
@@ -204,6 +235,23 @@ def similarity_bic(frame_a, frame_b):
     return cos
 
 
+def similarity_bic_dlog(frame_a, frame_b):
+
+    bic_a = cv3.bic(frame_a, 32)
+    bic_b = cv3.bic(frame_b, 32)
+
+    # pega o vetor de caracteristicas do bic se for um dict
+    if isinstance(bic_a, dict):
+        bic_a = bic_a["bic_features"]
+    if isinstance(bic_b, dict):
+        bic_b = bic_b["bic_features"]
+
+    array_a = np.array(bic_a)
+    array_b = np.array(bic_b)
+
+    return dlog(array_a, array_b)
+
+
 def compare_times(video, csv_dict, lst_frames):
     """
         Compara os tempos da lista de frames de corte com o csv da planilha
@@ -242,78 +290,6 @@ def compare_times(video, csv_dict, lst_frames):
     print("len(csv_dict)", len(csv_dict))
     print("accuracy", accuracy)
     return accuracy
-
-
-def detecta_corte_grid(video, lista_frames, limiar, nparts, mask=[]):
-    """
-    função para detectar corte entre os frames de uma lista, porém analisaremos os grids da imagem, ou seja, compararemos
-        a similaridade por meio do quão parecidos são os grids
-    :param lista_frames: lista de dicts contendo ids dos frames e o frame em si, sendo as keys = frames_id e frames
-    :param limiar: fator que determinará se o resultado da função e comparação reflete um corte
-    :param nparts: numero de partições do grid
-    :param mask: vetor contendo os pesos que devem ser dados as posições do grid
-    :return: uma lista de tuplas contendo a comparação feita e o valor resultante da comparação, porém só será retornado
-            as comparações que forem acima do limiar, ou seja, só serão retornados os cortes
-    """
-    lista_cortes = []
-
-    # checando a integridade da mascara
-    if len(mask) is 0:
-        mask = []
-        for i in range(nparts * nparts):
-            mask.append(1)
-    elif len(mask) < nparts * nparts:
-        raise Exception("tamanho da mascara não compreende o tamanho de tiles do grid")
-
-    # tirando o 1º frame na mão
-    fa = lista_frames[0]  # frameA
-    # tirando o histograma local nas 3 bandas das partições
-    tiles_fa = cv3.histogram_local(fa["frame"], nparts)
-
-    # iterando sobre os outros frames
-    for frame in lista_frames[1:]:
-        # tirando o histograma local nas 3 bandas do frame b
-        tiles_frame = cv3.histogram_local(frame["frame"], nparts)
-
-        lista_a = []
-        lista_b = []
-        tiles_simi = []
-        # percorrendo todos os grids
-        for tile in range(0, nparts * nparts):
-            for channel in range(0, 3):
-                for color in range(0, 256):
-                    lista_a.append(tiles_fa[tile][channel][color])
-                    lista_b.append(tiles_frame[tile][channel][color])
-            # tirando a similaridade entre os tiles do grid
-            array_a = np.array(lista_a)
-            array_b = np.array(lista_b)
-            cos = cos_vectors(array_a, array_b)
-            tiles_simi.append(
-                cos
-            )  # criando um vetor com as similaridades entre os tiles
-
-        # vetor contendo a similaridade entre os tiles já multiplicados os pesos
-        similaridades = np.multiply(tiles_simi, mask)
-        soma_valores = np.sum(similaridades)
-        soma_pesos = np.sum(mask)
-
-        # todo arrumar uma mas boa
-        media = soma_valores / soma_pesos
-
-        if media > limiar:  # corte
-            lista_cortes.append(
-                {
-                    "frame_id_A": fa["frame_id"],
-                    "frame_id_B": frame["frame_id"],
-                    "similarity": media,
-                    "time": get_time_frame(video, frame["frame_id"]),
-                }
-            )
-
-        # resetando para a proxima iteraçao
-        fa = frame
-        tiles_fa = tiles_frame
-    return lista_cortes
 
 
 @nb.jit
