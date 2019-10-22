@@ -162,7 +162,7 @@ plt.show()
 semana = list(
     filter(
         lambda x: True
-        if x["Data"] != "19/10/2019" or x["Data"] != "20/10/2019"
+        if x["Data"] != "19/10/2019" and x["Data"] != "20/10/2019"
         else False,
         tuplaCabo,
     )
@@ -185,7 +185,7 @@ up_fds_cabo = list(map(lambda x: float(x["upload"]), fds))
 semana = list(
     filter(
         lambda x: True
-        if x["Data"] != "19/10/2019" or x["Data"] != "20/10/2019"
+        if x["Data"] != "19/10/2019" and x["Data"] != "20/10/2019"
         else False,
         tuplaWF,
     )
@@ -200,10 +200,10 @@ fds = list(
     )
 )
 
-dl_fds_wifi = list(map(lambda x: float(x["download"]), semana))
-up_fds_wifi = list(map(lambda x: float(x["upload"]), semana))
-dl_semana_wifi = list(map(lambda x: float(x["download"]), fds))
-up_semana_wifi = list(map(lambda x: float(x["upload"]), fds))
+dl_fds_wifi = list(map(lambda x: float(x["download"]), fds))
+up_fds_wifi = list(map(lambda x: float(x["upload"]), fds))
+dl_semana_wifi = list(map(lambda x: float(x["download"]), semana))
+up_semana_wifi = list(map(lambda x: float(x["upload"]), semana))
 
 # dl vs dl semana/fds
 plt.subplot(211)
