@@ -6,8 +6,8 @@ from pprint import pprint
 
 PATH_VIDEO = "../videos"
 
-limiar = [30, 40, 50, 60, 70, 80, 90]
-tam_img = [20, 40]
+limiar = [80, 90]
+tam_img = [20]
 grid = [5, 10]
 algs = ["bic_dlog", "bic", "hist"]
 

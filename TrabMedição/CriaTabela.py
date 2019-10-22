@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pprint import pprint
 from datetime import datetime
+import pandas as pd
 
 fileCabo = "Medição - CabCasa.csv"
 file2Wifi = "Medição - Wifi.csv"
@@ -107,6 +108,7 @@ manha_dl = np.array(list(map(lambda x: float(x["download"]), manhawf)))
 tarde_dl = np.array(list(map(lambda x: float(x["download"]), tardewf)))
 noite_dl = np.array(list(map(lambda x: float(x["download"]), noitewf)))
 
+
 plt.subplot(311)
 plt.plot(manha_dl)
 plt.xlabel("Nº Medição")
@@ -138,6 +140,8 @@ plt.plot(noite_up, "r")
 plt.ylabel("velocidade (Mbps)")
 plt.show()
 
+
+
 #############################Grafico ping######################################
 # plotando grafico do ping
 ping_cabo = np.array(list(map(lambda x: float(x["ping"]), tuplaCabo)))
@@ -152,6 +156,17 @@ plt.plot(ping_wifi, "orange")
 plt.xlabel("Nº Medição")
 plt.ylabel("Ping (ms)")
 plt.show()
+
+d1 = pd.DataFrame(ping_cabo)
+print("manhã")
+print(d1.max())
+print(d1.min())
+
+d1 = pd.DataFrame(ping_wifi)
+print("tarde")
+print(d1.max())
+print(d1.min())
+
 
 #################################Gráfico dl/up dia de semana vs fim de semana######################
 #   0    1       2           3          4
@@ -180,7 +195,6 @@ dl_semana_cabo = list(map(lambda x: float(x["download"]), semana))
 up_semana_cabo = list(map(lambda x: float(x["upload"]), semana))
 dl_fds_cabo = list(map(lambda x: float(x["download"]), fds))
 up_fds_cabo = list(map(lambda x: float(x["upload"]), fds))
-
 
 semana = list(
     filter(
